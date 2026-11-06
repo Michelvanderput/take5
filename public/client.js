@@ -478,14 +478,25 @@ function renderHome() {
   codeEl.onkeydown = (e) => { if (e.key === 'Enter') document.getElementById('join').click(); };
 }
 
+// Live stand: tijdens een ronde tellen de al gepakte punten mee (na afloop zit alles al in `score`)
+let lastLeaders = '';
+const liveTotal = (p) => p.score + (S.gamePhase === 'roundEnd' || S.gamePhase === 'gameOver' ? 0 : p.roundPoints);
+
 function playersHtml(waiting) {
-  return `<div class="players">${S.players.map((p) => {
+  const totals = S.players.map(liveTotal);
+  const best = Math.min(...totals);
+  const worst = Math.max(...totals);
+  const leaders = worst > best ? S.players.filter((_, i) => totals[i] === best).map((p) => p.id).join(',') : '';
+  const changed = leaders !== lastLeaders && !!leaders; // animatie alleen als de leider wisselt
+  lastLeaders = leaders;
+  return `<div class="players">${S.players.map((p, i) => {
     const dot = !p.connected ? '' : waiting ? `<i class="dot ${p.hasChosen ? 'ok' : 'think'}"></i>` : '';
-    const pct = Math.min(100, Math.round(((p.score + 0) / S.targetScore) * 100));
-    return `<div class="pl ${p.id === S.you ? 'me' : ''} ${p.connected ? '' : 'off'}" data-pid="${p.id}">
+    const pct = Math.min(100, Math.round((totals[i] / S.targetScore) * 100));
+    const leads = worst > best && totals[i] === best; // kroon: laagste stand (alleen als er verschil is)
+    return `<div class="pl ${p.id === S.you ? 'me' : ''} ${p.connected ? '' : 'off'} ${leads ? 'lead' : ''}" data-pid="${p.id}">
       <span class="avatar" style="--h:${hue(p.name)}">${esc([...p.name][0] || '?').toUpperCase()}${dot}</span>
-      <span class="nm">${p.bot ? '🤖 ' : ''}${esc(p.name)}${p.id === S.hostId ? ' 👑' : ''}</span>
-      <span class="sc"><b data-pid="${p.id}" data-score="${p.score}">${p.score}</b>${p.roundPoints ? ` <span style="color:var(--t5)">+${p.roundPoints}</span>` : ''} ${cowSvg()}</span>
+      <span class="nm">${p.bot ? '🤖 ' : ''}${esc(p.name)}${leads ? ` <span class="crown ${changed ? 'new' : ''}">👑</span>` : ''}</span>
+      <span class="sc"><b data-pid="${p.id}" data-score="${p.score}">${p.score}</b>${p.roundPoints && S.gamePhase !== 'roundEnd' && S.gamePhase !== 'gameOver' ? ` <span style="color:var(--t5)">+${p.roundPoints}</span>` : ''} ${cowSvg()}</span>
       <span class="bar"><i class="${pct >= 75 ? 'hi' : ''}" style="width:${pct}%"></i></span></div>`;
   }).join('')}</div>`;
 }

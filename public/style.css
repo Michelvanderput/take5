@@ -384,3 +384,10 @@ button#ready.on { animation: none; }
   90% { opacity: 1; }
   100% { transform: translate(-50%, -50%) rotate(var(--tilt)) scale(.85); opacity: 0; }
 }
+
+/* kroon op de leider */
+.pl.lead { border-color: rgba(251, 191, 36, .65); box-shadow: 0 0 0 1px rgba(251, 191, 36, .2), 0 8px 24px -10px rgba(251, 191, 36, .5); }
+.pl.lead.me { border-color: rgba(251, 191, 36, .85); }
+.crown { display: inline-block; }
+.crown.new { animation: crownIn .5s cubic-bezier(.2, 1.6, .4, 1); }
+@keyframes crownIn { from { transform: translateY(-10px) scale(.3) rotate(-30deg); opacity: 0; } }
