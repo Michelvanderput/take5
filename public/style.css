@@ -143,8 +143,6 @@ select option { background: #151b30; }
 .card.sm.p5 .cows, .card.sm.p7 .cows { font-size: .62rem; }
 .card.empty { background: rgba(255, 255, 255, .03); border: 1.5px dashed rgba(255, 255, 255, .16); box-shadow: none; }
 .card.empty::before { display: none; }
-.pop { animation: pop .55s cubic-bezier(.2, 1.3, .4, 1); }
-@keyframes pop { from { transform: translateY(-70px) rotate(-8deg) scale(1.35); opacity: 0; } to { transform: none; opacity: 1; } }
 
 /* bord */
 .board { display: grid; gap: 10px; }

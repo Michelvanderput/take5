@@ -175,6 +175,35 @@ function renderLobby() {
   }
 }
 
+// Laat een kaart van onderen (de onthulde kaarten, anders onderrand van het scherm) naar zijn rij vliegen.
+// Een losse kloon boven de pagina, want de rij heeft overflow en zou de kaart afknippen.
+function flyCard(card) {
+  const target = app.querySelector('.card.fly');
+  if (!target || !target.animate || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const tr = target.getBoundingClientRect();
+  const src = app.querySelector(`.tray .card[data-card="${card}"]`);
+  const sr = src
+    ? src.getBoundingClientRect()
+    : { left: innerWidth / 2 - tr.width / 2, top: innerHeight + 30, width: tr.width };
+  const dx = sr.left - tr.left;
+  const dy = sr.top - tr.top;
+  const s0 = sr.width / tr.width;
+  const ghost = target.cloneNode(true);
+  ghost.classList.remove('fly');
+  Object.assign(ghost.style, {
+    position: 'fixed', left: tr.left + 'px', top: tr.top + 'px', width: tr.width + 'px', height: tr.height + 'px',
+    margin: 0, zIndex: 30, pointerEvents: 'none', willChange: 'transform',
+  });
+  document.body.appendChild(ghost);
+  target.style.visibility = 'hidden';
+  const done = () => { ghost.remove(); target.style.visibility = ''; };
+  ghost.animate([
+    { transform: `translate(${dx}px, ${dy}px) scale(${s0}) rotate(-8deg)`, boxShadow: '0 4px 10px rgba(0,0,0,.4)' },
+    { transform: `translate(${dx * 0.25}px, ${dy * 0.25 - 18}px) scale(1.22) rotate(3deg)`, boxShadow: '0 30px 40px -8px rgba(0,0,0,.7)', offset: 0.72 },
+    { transform: 'none', boxShadow: '0 6px 16px -6px rgba(0,0,0,.55)' },
+  ], { duration: 800, easing: 'cubic-bezier(.22,.9,.3,1)' }).finished.then(done, done);
+}
+
 function renderGame() {
   setMain('game');
   const g = S.gamePhase;
@@ -205,7 +234,7 @@ function renderGame() {
     let cells = '';
     for (let k = 0; k < 5; k++) {
       cells += row[k] !== undefined
-        ? cardHtml(row[k], fresh && ev.row === i && row[k] === ev.card ? 'pop' : '')
+        ? cardHtml(row[k], fresh && ev.row === i && row[k] === ev.card ? 'fly' : '')
         : '<div class="card empty"></div>';
     }
     return `<div class="${cls}" data-row="${i}"><span class="lane">${i + 1}</span>${cells}<span class="tot">${cowSvg()} ${sum(row)}</span></div>`;
@@ -246,6 +275,7 @@ function renderGame() {
       ${canPlay ? `<button id="play" class="lg" ${selected ? '' : 'disabled'}>${selected ? `Speel ${selected}` : 'Kies een kaart'}</button>` : ''}
       ${handHtml}</div></div>` : ''}`;
 
+  if (fresh && ev.card) flyCard(ev.card);
   if (S.myChoice === null && selected !== null && !S.hand.includes(selected)) selected = null;
   if (canPlay) {
     app.querySelectorAll('.hand .card').forEach((el) => (el.onclick = () => { selected = +el.dataset.card; renderGame(); }));
