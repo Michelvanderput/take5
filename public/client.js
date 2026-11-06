@@ -234,6 +234,9 @@ const SHOUTS = [
 ];
 // Voorspelbaar 'toeval': dezelfde seed geeft bij elke speler dezelfde tekst, kanteling, vonken en schudbeweging.
 const seeded = (a) => () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+// zeldzame jumpscare bij 10+ punten; alvast inladen zodat hij direct in beeld is
+const MEME_CHANCE = 0.35;
+try { new Image().src = 'scream.jpg'; } catch {}
 const COLORS = ['#ef4444', '#f97316', '#fbbf24', '#ffffff', '#a855f7'];
 
 /** De klap. L = niveau (0 = licht). Hoe hoger, hoe heftiger: schudden, flits, schokgolven, scherven, bas, trillen. */
@@ -306,6 +309,18 @@ function impact(L, rect, who = '', seed = 0) {
   const w = t.offsetWidth; // layoutbreedte, zonder de schaal van de animatie
   if (w > maxW) t.style.setProperty('--fs', (1.6 + k * 0.9) * (maxW / w) + 'rem');
   t.addEventListener('animationend', () => t.remove());
+  // heel af en toe (niveau 6, voor iedereen op hetzelfde moment): de schreeuwende kat
+  if (L === 6 && rnd() < MEME_CHANCE) {
+    document.querySelectorAll('.meme').forEach((e) => e.remove());
+    const m = document.createElement('img');
+    m.className = 'meme';
+    m.src = 'scream.jpg';
+    m.alt = '';
+    m.style.setProperty('--dur', 2.3 + L * 0.15 + 's');
+    m.style.setProperty('--tilt', (rnd() > 0.5 ? 1 : -1) * (3 + rnd() * 4) + 'deg');
+    document.body.appendChild(m);
+    m.addEventListener('animationend', () => m.remove());
+  }
 }
 
 /** Na de klap: de gepakte rij vliegt naar de speler; +punten zweeft omhoog. `delay`: wacht op de klap. */
