@@ -327,6 +327,9 @@ function playersHtml(waiting) {
 
 function renderLobby() {
   setMain('lobby');
+  lastSeq = 0;
+  prev = { ...prev, round: 0, chosen: {}, revealKey: '', phase: '', over: false, myRow: false, scores: {} };
+  selected = null;
   const host = S.hostId === S.you;
   app.innerHTML = `
     <section class="hero" style="padding-bottom:6px"><h1><span class="grad-text">Take 5!</span></h1></section>
@@ -450,7 +453,8 @@ function renderGame() {
     <div class="topbar">
       <span class="pill"><b>Ronde ${S.round}</b></span>
       <span class="pill">eindigt bij ${S.targetScore} ${cowSvg()}</span>
-      <span class="pill" style="margin-left:auto">Kamer ${S.code}</span>
+      <span class="pill" style="margin-left:auto"><span class="lbl">Kamer </span>${S.code}</span>
+      <button class="sec sm" id="quit" title="${S.hostId === S.you ? 'Stop spel' : 'Verlaat spel'}">${S.hostId === S.you ? '⏹' : '🚪'}<span class="lbl"> ${S.hostId === S.you ? 'Stop spel' : 'Verlaat spel'}</span></button>
       <span class="pill timer ${secs !== null && secs <= 10 ? 'hot' : ''}" id="timer" ${secs === null ? 'style="visibility:hidden"' : ''}>⏱ ${secs ?? 0}s</span>
     </div>
     ${playersHtml(g === 'choosing')}
@@ -472,6 +476,13 @@ function renderGame() {
   if (needMyRow) app.querySelectorAll('.brow').forEach((el) => (el.onclick = () => { buzz(15); send({ t: 'pickRow', row: +el.dataset.row }); }));
   const rm = document.getElementById('rematch');
   if (rm) rm.onclick = () => send({ t: 'rematch' });
+  const q = document.getElementById('quit');
+  if (q) q.onclick = () => {
+    const host = S.hostId === S.you;
+    if (confirm(host ? 'Het spel stoppen voor alle spelers?' : 'Het spel verlaten? Een bot neemt jouw plek over.')) {
+      send({ t: host ? 'stop' : 'leave' });
+    }
+  };
 
   // ---- animaties en geluid ----
   if (anim) {

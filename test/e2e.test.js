@@ -5,6 +5,26 @@ const assert = require('node:assert');
 const { handle } = require('../server/api');
 const { memoryStore, sqlStore } = require('../server/store');
 
+async function stopTest(store) {
+  const call = async (p, body) => (await handle(store, { ...(p && { code: p.code, token: p.token, id: p.id }), ...body }));
+  const a = (await call(null, { t: 'create', name: 'Anna' })).json;
+  const b = (await call(null, { t: 'join', code: a.code, name: 'Bob' })).json;
+  const pa = { code: a.code, token: a.token, id: a.id };
+  const pb = { code: a.code, token: b.token, id: b.id };
+  await call(pa, { t: 'start' });
+  assert.equal((await call(pb, { t: 'stop' })).status, 400); // alleen host
+  assert.equal((await call(pa, { t: 'stop' })).status, 200);
+  const s = (await call(pb, { t: 'poll' })).json.state;
+  assert.equal(s.phase, 'lobby');
+  await call(pa, { t: 'start' });
+  const l = await call(pb, { t: 'leave' }); // midden in het spel: bot neemt over
+  assert.equal(l.status, 200);
+  const s2 = (await call(pa, { t: 'poll' })).json.state;
+  assert.ok(s2.players.find((p) => p.name === 'Bob').bot);
+}
+
+test('host kan spel stoppen, speler kan verlaten', () => stopTest(memoryStore()));
+
 async function run(store) {
   const call = async (p, body) => {
     const r = await handle(store, { ...(p && { code: p.code, token: p.token, id: p.id }), ...body });

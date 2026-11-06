@@ -173,6 +173,13 @@ function apply(s, me, body, ctx) {
       g.chooseRow(me.id, body.row);
       schedule(s, ctx.now, T.STEP, 'step');
       return;
+    case 'stop':
+      host();
+      if (s.phase !== 'game') throw new Error('Er loopt geen spel');
+      s.game = null;
+      s.phase = 'lobby';
+      s.nextAt = s.nextAction = null;
+      return;
     case 'rematch':
       host();
       if (!g || g.phase !== 'gameOver') throw new Error('Spel is nog bezig');
