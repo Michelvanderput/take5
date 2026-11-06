@@ -3,10 +3,9 @@ process.env.STEP_MS = '5';
 const test = require('node:test');
 const assert = require('node:assert');
 const { handle } = require('../server/api');
-const { memoryStore } = require('../server/store');
+const { memoryStore, sqlStore } = require('../server/store');
 
-test('twee spelers + bot spelen een heel spel via de API (stateless)', async () => {
-  const store = memoryStore();
+async function run(store) {
   const call = async (p, body) => {
     const r = await handle(store, { ...(p && { code: p.code, token: p.token, id: p.id }), ...body });
     assert.equal(r.status, 200, JSON.stringify(r.json));
@@ -40,4 +39,15 @@ test('twee spelers + bot spelen een heel spel via de API (stateless)', async () 
   // je ziet alleen je eigen hand, nooit andermans token/hand
   assert.ok(!JSON.stringify(s).includes(b.token));
   assert.equal((await handle(store, { t: 'poll', code: a.code, token: 'fout' })).status, 400);
+}
+
+test('heel spel via de API (geheugen)', () => run(memoryStore()));
+
+// Optioneel tegen echte Postgres: TEST_PG_URL=postgres://... npm test
+test('heel spel via de API (Postgres)', { skip: !process.env.TEST_PG_URL }, async () => {
+  const { Client } = require('pg');
+  const c = new Client({ connectionString: process.env.TEST_PG_URL });
+  await c.connect();
+  await run(sqlStore(async (t, p) => (await c.query(t, p)).rows));
+  await c.end();
 });
