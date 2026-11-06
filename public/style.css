@@ -13,7 +13,9 @@
   --r: 16px;
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html { color-scheme: dark; scrollbar-gutter: stable; overflow-y: scroll; }
+html { color-scheme: dark; -webkit-text-size-adjust: 100%; }
+body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
+html.noscroll, html.noscroll body { overflow: hidden; }
 :root { --cw: min(clamp(38px, calc((100dvh - 445px) / 6.98), 66px), 13.5vw); --bf: .74; }
 @media (min-width: 821px) { :root { --cw: min(clamp(40px, calc((100dvh - 440px) / 6.24), 66px), 13.5vw); --bf: .8; } }
 body {
@@ -31,7 +33,7 @@ svg.cow { width: 1em; height: 1em; vertical-align: -.12em; }
 .bg i:nth-child(3) { width: 320px; height: 320px; background: #0891b2; top: 40%; left: 55%; opacity: .3; animation-delay: -14s; }
 @keyframes drift { to { transform: translate(60px, 40px) scale(1.15); } }
 
-main { max-width: 1000px; margin: 0 auto; padding: 16px 16px calc(var(--cw) * 1.485 + 105px); }
+main { max-width: 1000px; margin: 0 auto; padding: 16px 16px var(--dock-h, 190px); }
 main.home, main.lobby { padding-bottom: 40px; }
 
 /* glas-panelen */
@@ -265,3 +267,26 @@ select option { background: #151b30; }
 
 .topbar { flex-wrap: nowrap; }
 @media (max-width: 560px) { .topbar .lbl { display: none; } .topbar .pill, .topbar button.sm { padding: 6px 10px; } .topbar { gap: 6px; } }
+
+/* 3+ koeien: één koe met aantal i.p.v. een prop koppen */
+.card .cows.cnt { gap: .2em; align-items: center; flex-wrap: nowrap; font-size: 1.05em; }
+.card .cows.cnt svg { width: 1.15em; height: 1.15em; }
+.card .cows.cnt b { font: 800 .95em Outfit, sans-serif; color: var(--tc); }
+.card.p5 .cows.cnt, .card.p7 .cows.cnt { font-size: 1.05em; }
+
+/* één regel status: nooit verspringen */
+.status .main, .status .sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 560px) { .status .main { font-size: 1.1rem; } }
+/* lage schermen: minder opmaak zodat alles toch past */
+@media (max-height: 700px) {
+  main { padding-top: 8px; }
+  .topbar { margin-bottom: 6px; }
+  .pl .bar { display: none; } .pl { padding: 6px 10px; } .pl .avatar { width: 32px; height: 32px; }
+  .players { padding-bottom: 4px; }
+  .status { min-height: 30px; margin: 2px 0 6px; } .status .sub { display: none; }
+  .dock .inner { gap: 6px; } .dock { padding-top: 6px; }
+  button.lg { padding: 9px 22px; }
+}
+
+@media (min-resolution: 2dppx) { .card { border-width: .5px; } .panel, .pill, .pl, .brow { border-width: .5px; } .brow { border-width: 1px; } }
+.card, .avatar svg, svg.cow { backface-visibility: hidden; }

@@ -47,6 +47,7 @@ async function run(store) {
     for (const p of [pa, pb]) {
       s = (await call(p, { t: 'poll' })).state;
       if (s.gamePhase === 'gameOver') break;
+      assert.ok(!(s.gamePhase === 'choosing' && s.hand.length === 1), 'laatste kaart moet automatisch gespeeld worden');
       if (s.gamePhase === 'choosing' && s.myChoice === null) await call(p, { t: 'play', card: s.hand[0] });
       else if (s.gamePhase === 'chooseRow' && s.waitingFor === s.you) await call(p, { t: 'pickRow', row: 0 });
     }

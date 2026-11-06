@@ -22,6 +22,7 @@ function toast(m) {
 
 const API = '/api/game';
 let busy = false;
+let lastCmp = '';
 
 async function post(m) {
   const r = await fetch(API, {
@@ -41,9 +42,13 @@ function onResponse(j) {
   }
   if (j.left) return clearSession();
   if (S && S.code === j.state.code && j.state.v < S.v) return; // oud antwoord
-  const changed = !S || JSON.stringify(S) !== JSON.stringify(j.state);
+  const cmp = JSON.stringify({ ...j.state, now: 0 });
+  const changed = !S || cmp !== lastCmp;
+  lastCmp = cmp;
   S = j.state;
+  if (S.now) skew = S.now - Date.now();
   if (changed) render();
+  if (!busy) schedulePoll();
 }
 
 function fail(e) {
@@ -55,6 +60,7 @@ function fail(e) {
 function clearSession() {
   session = null;
   S = null;
+  lastCmp = '';
   localStorage.removeItem('take5');
   render();
 }
@@ -63,12 +69,29 @@ function send(m) {
   return post(m).then(onResponse).catch(fail);
 }
 
-// Elke ~0,8 s de stand ophalen (Vercel kent geen WebSockets).
-setInterval(() => {
-  if (!session || busy) return;
+// Stand ophalen (Vercel kent geen WebSockets). Tempo past zich aan, en bij een lopende
+// animatie vragen we precies op het moment dat de volgende stap klaar is.
+let skew = 0; // verschil tussen server- en clientklok
+let pollTimer = null;
+const serverNow = () => Date.now() + skew;
+function nextDelay() {
+  if (!S) return 1000;
+  const g = S.gamePhase;
+  let d = S.phase !== 'game' ? 1000 : g === 'resolving' || g === 'chooseRow' || g === 'roundEnd' ? 450 : 700;
+  if (S.phase === 'game' && g === 'resolving' && S.deadline) d = Math.min(d, Math.max(60, S.deadline - serverNow() + 50));
+  return d;
+}
+function schedulePoll(ms = nextDelay()) {
+  clearTimeout(pollTimer);
+  pollTimer = setTimeout(pollNow, ms);
+}
+async function pollNow() {
+  if (!session) return schedulePoll(1000);
+  if (busy) return schedulePoll(150);
   busy = true;
-  post({ t: 'poll' }).then(onResponse).catch(fail).finally(() => (busy = false));
-}, 800);
+  try { onResponse(await post({ t: 'poll' })); } catch (e) { fail(e); } finally { busy = false; schedulePoll(); }
+}
+schedulePoll(800);
 
 // ---------- geluid, trillen, effecten ----------
 const sfx = (() => {
@@ -234,9 +257,11 @@ function confetti() {
   if (reduced()) return;
   const cv = document.createElement('canvas');
   Object.assign(cv.style, { position: 'fixed', inset: 0, width: '100%', height: '100%', zIndex: 40, pointerEvents: 'none' });
-  cv.width = innerWidth; cv.height = innerHeight;
+  const dpr = Math.min(3, window.devicePixelRatio || 1);
+  cv.width = innerWidth * dpr; cv.height = innerHeight * dpr;
   document.body.appendChild(cv);
   const x = cv.getContext('2d');
+  x.scale(dpr, dpr);
   const cols = ['#34d399', '#22d3ee', '#fbbf24', '#ef4444', '#a855f7', '#ffffff'];
   const ps = Array.from({ length: 160 }, () => ({
     x: innerWidth / 2 + (Math.random() - 0.5) * 200, y: innerHeight * 0.55, vx: (Math.random() - 0.5) * 16,
@@ -245,7 +270,7 @@ function confetti() {
   }));
   const t0 = performance.now();
   const loop = (t) => {
-    x.clearRect(0, 0, cv.width, cv.height);
+    x.clearRect(0, 0, innerWidth, innerHeight);
     for (const p of ps) {
       p.vy += 0.45; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
       x.save(); x.translate(p.x, p.y); x.rotate(p.r); x.fillStyle = p.c; x.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); x.restore();
@@ -262,7 +287,7 @@ const avatar = (name) => `<span class="avatar" style="--h:${hue(name)}">${esc([.
 
 function cardHtml(n, cls = '') {
   const p = points(n);
-  return `<div class="card p${p} ${cls}" data-card="${n}"><span class="num">${n}</span><span class="cows">${cowSvg(p)}</span></div>`;
+  return `<div class="card p${p} ${cls}" data-card="${n}"><span class="num">${n}</span><span class="cows ${p > 2 ? 'cnt' : ''}">${p > 2 ? `${cowSvg()}<b>${p}</b>` : cowSvg(p)}</span></div>`;
 }
 
 function cardBack(pid, extra = '') {
@@ -270,6 +295,9 @@ function cardBack(pid, extra = '') {
 }
 
 function setMain(cls) {
+  if (app.className !== cls && app.animate && !reduced()) {
+    app.animate([{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { duration: 280, easing: 'cubic-bezier(.2,.8,.2,1)' });
+  }
   app.className = cls;
 }
 
@@ -281,6 +309,7 @@ function render() {
 
 function renderHome() {
   setMain('home');
+  document.documentElement.classList.remove('noscroll');
   app.innerHTML = `
     <section class="hero">
       <h1><span class="grad-text">Take 5!</span></h1>
@@ -327,6 +356,7 @@ function playersHtml(waiting) {
 
 function renderLobby() {
   setMain('lobby');
+  document.documentElement.classList.remove('noscroll');
   lastSeq = 0;
   prev = { ...prev, round: 0, chosen: {}, revealKey: '', phase: '', over: false, myRow: false, scores: {} };
   selected = null;
@@ -367,6 +397,30 @@ function renderLobby() {
   }
 }
 
+/** Meet of het spel in beeld past en verklein de kaarten tot dat zo is: nooit een scrollbalk in het spel. */
+function fitGame() {
+  const root = document.documentElement;
+  root.classList.remove('noscroll');
+  const dock = app.querySelector('.dock');
+  const cap = Math.min(66, innerWidth * 0.135);
+  const fitting = !(S && S.gamePhase === 'gameOver');
+  const dpr = window.devicePixelRatio || 1;
+  const snap = (v) => Math.floor(v * dpr) / dpr; // hele fysieke pixels
+  let cw = snap(cap);
+  for (let i = 0; i < 10; i++) {
+    root.style.setProperty('--cw', cw + 'px');
+    root.style.setProperty('--dock-h', (dock ? dock.offsetHeight + 6 : 16) + 'px');
+    if (!fitting) return;
+    const over = root.scrollHeight - innerHeight;
+    if (over <= 0) break;
+    const next = snap(Math.max(30, cw - Math.max(0.6, over / 6.8)));
+    if (next === cw) break;
+    cw = next;
+  }
+  if (fitting && root.scrollHeight <= innerHeight) root.classList.add('noscroll');
+}
+addEventListener('resize', () => { if (app.classList.contains('game') && S) fitGame(); });
+
 function renderGame() {
   setMain('game');
   const g = S.gamePhase;
@@ -387,12 +441,12 @@ function renderGame() {
 
   let status = '';
   let alert = false;
-  if (g === 'choosing') status = S.myChoice ? 'Kaart gekozen — wachten op de anderen…' : 'Kies een kaart uit je hand';
+  if (g === 'choosing') status = S.myChoice ? 'Gekozen — even wachten…' : 'Kies een kaart uit je hand';
   else if (g === 'resolving') status = 'Kaarten worden neergelegd…';
   else if (g === 'chooseRow') {
     alert = needMyRow;
-    status = needMyRow ? 'Je kaart is te laag — kies een rij om op te ruimen!' : `${esc(name(S.waitingFor))} moet een rij kiezen…`;
-  } else if (g === 'roundEnd') status = 'Ronde afgelopen — de volgende start zo…';
+    status = needMyRow ? 'Te laag! Kies een rij om te nemen' : `${esc(name(S.waitingFor))} moet een rij kiezen…`;
+  } else if (g === 'roundEnd') status = 'Ronde voorbij — volgende start zo…';
   else if (g === 'gameOver') status = '🏆 Spel afgelopen!';
 
   let evText = '';
@@ -447,7 +501,7 @@ function renderGame() {
       ${S.hostId === S.you ? '<button id="rematch" class="lg">Nog een keer ↺</button>' : '<p class="muted">Wachten op de host…</p>'}</div>`;
   }
 
-  const secs = S.deadline && (g === 'choosing' || needMyRow) ? Math.max(0, Math.round((S.deadline - Date.now()) / 1000)) : null;
+  const secs = S.deadline && (g === 'choosing' || needMyRow) ? Math.max(0, Math.round((S.deadline - serverNow()) / 1000)) : null;
 
   app.innerHTML = `
     <div class="topbar">
@@ -466,6 +520,7 @@ function renderGame() {
       <button id="play" class="lg" ${selected && canPlay ? '' : 'disabled'} ${canPlay ? '' : 'style="visibility:hidden" tabindex="-1"'}>${selected ? `Speel ${selected}` : 'Kies een kaart'}</button>
       ${handHtml}</div></div>` : ''}`;
 
+  fitGame();
   rehide();
   if (S.myChoice === null && selected !== null && !S.hand.includes(selected)) selected = null;
   if (canPlay) {
@@ -553,7 +608,7 @@ function playSelected() {
 setInterval(() => {
   const el = document.getElementById('timer');
   if (S && S.deadline && el) {
-    const s = Math.max(0, Math.round((S.deadline - Date.now()) / 1000));
+    const s = Math.max(0, Math.round((S.deadline - serverNow()) / 1000));
     el.textContent = `⏱ ${s}s`;
     el.classList.toggle('hot', s <= 10);
   }

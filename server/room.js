@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const { Game, sumPoints } = require('./game');
 
 const T = {
-  STEP: +process.env.STEP_MS || 1100, // pauze tussen kaarten (animatie)
+  STEP: +process.env.STEP_MS || 1000, // pauze tussen kaarten (animatie)
   TURN: 60000, // bedenktijd per beurt
   ROW: 30000, // bedenktijd om een rij te kiezen
   BREAK: 9000, // pauze tussen rondes
@@ -40,7 +40,9 @@ function settleChoosing(s, ctx) {
   const g = s.game;
   if (g.phase !== 'choosing') return;
   for (const p of g.players) {
-    if (g.chosen[p.id] === undefined && isAuto(s, p.id, ctx)) g.chosen[p.id] = pick(g, p.id);
+    if (g.chosen[p.id] !== undefined) continue;
+    if (p.hand.length === 1) g.chosen[p.id] = p.hand[0]; // laatste kaart: geen keuze, automatisch
+    else if (isAuto(s, p.id, ctx)) g.chosen[p.id] = pick(g, p.id);
   }
   if (g.allChosen()) {
     g.reveal();
@@ -111,7 +113,7 @@ function view(s, forId, ctx) {
   });
   const v = {
     v: s.version, code: s.code, you: forId, hostId: s.hostId, phase: s.phase,
-    targetScore: s.targetScore, players, deadline: s.nextAt,
+    targetScore: s.targetScore, players, deadline: s.nextAt, now: ctx.now,
   };
   if (g) {
     const mine = g.player(forId);
