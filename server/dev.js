@@ -8,6 +8,7 @@ const { defaultStore } = require('./store');
 
 const PUBLIC = path.join(__dirname, '..', 'public');
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8' };
+const { scan } = require('../scripts/memes');
 const store = defaultStore();
 
 const server = http.createServer((req, res) => {
@@ -23,6 +24,10 @@ const server = http.createServer((req, res) => {
       res.end(JSON.stringify(json));
     });
     return;
+  }
+  if (url.pathname === '/memes/index.json') { // lokaal altijd actueel, zonder npm run memes
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    return res.end(JSON.stringify(scan().files));
   }
   const full = path.normalize(path.join(PUBLIC, url.pathname === '/' ? '/index.html' : url.pathname));
   if (!full.startsWith(PUBLIC)) return res.writeHead(403).end();

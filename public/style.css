@@ -371,9 +371,10 @@ select option { background: #151b30; }
 button#ready:not(.on) { background: var(--glass-2); color: var(--ink); border: 1px solid var(--line); box-shadow: none; }
 button#ready.on { animation: none; }
 
-/* jumpscare: de schreeuwende kat (heel af en toe bij 10+ punten) */
-.meme { position: fixed; left: 50%; top: 60%; z-index: 35; pointer-events: none; width: min(68vw, 340px); aspect-ratio: 1142 / 997; object-fit: cover;
-  border-radius: 22px; border: 4px solid #fff; box-shadow: 0 0 0 4px rgba(239, 68, 68, .85), 0 0 60px 10px rgba(239, 68, 68, .7), 0 30px 70px rgba(0, 0, 0, .7);
+/* uitlach-foto (heel af en toe bij 10+ punten) */
+.meme { position: fixed; left: 50%; top: 60%; z-index: 35; pointer-events: none; width: auto; height: auto; max-width: min(70vw, 360px); max-height: 40vh;
+  object-fit: contain; background: #fff; border-radius: 22px; border: 4px solid #fff;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, .85), 0 0 60px 10px rgba(239, 68, 68, .7), 0 30px 70px rgba(0, 0, 0, .7);
   transform: translate(-50%, -50%) rotate(var(--tilt)); animation: meme var(--dur, 3s) cubic-bezier(.2, 1.4, .4, 1) forwards; }
 @keyframes meme {
   0% { transform: translate(-50%, -20%) rotate(calc(var(--tilt) * 3)) scale(.1); opacity: 0; }
@@ -391,3 +392,6 @@ button#ready.on { animation: none; }
 .crown { display: inline-block; }
 .crown.new { animation: crownIn .5s cubic-bezier(.2, 1.6, .4, 1); }
 @keyframes crownIn { from { transform: translateY(-10px) scale(.3) rotate(-30deg); opacity: 0; } }
+
+/* lange kreten op twee regels */
+.shout.wrap { white-space: normal; width: max-content; max-width: min(62vw, 620px); text-align: center; line-height: 1.08; }

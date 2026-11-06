@@ -225,22 +225,31 @@ const strength = (L) => (L ? 1.6 + L * 0.7 : 1); // vloeiende sterkte voor alle 
 // Korte, brutale kreten; {n} = naam van de speler die de rij pakt. Van vriendelijk (5 punten) naar hard (10+).
 const SHOUTS = [
   [],
-  ['Boem!', 'Ouch!', 'Jammer man!', 'Lekker voor je!'],
-  ['Boem!', 'Lekker voor je, {n}!', 'Jammer man!', 'Sukkeltje!', 'Ouch!'],
-  ['Hoe dom ben je!', 'Lekker voor je, {n}!', 'Sukkeltje!', 'Tantoe Sulletje!', 'Jammer man, dombo!', 'Loser!'],
-  ['Wat kan je wel?!', 'Hoe dom ben je, sukkel!', 'Tantoe Sulletje!', 'Boem, dombo!', 'Ouch, kneus!', 'Loser!', 'Hond!'],
-  ['Hoe dom ben je, dombo?!', 'Wat kan je wel, kneus?!', 'Lekker voor je, bitch!', 'Tantoe Sulletje!', 'Boem, bitch!', 'Fucking loser!', 'Loser, bitch!', 'Hond!'],
-  ['Boem, bitch!', 'Hoe dom ben je, dombo?!', 'Wat kan je wel, kneus?!', 'Lekker voor je, bitch!', 'Tantoe Sulletje!', 'Hoppa bitch!', 'Fucking loser!', 'Fucking loser, {n}!', 'Loser, dombo!', 'Hond!'],
+  ['Boem!', 'Ouch!', 'Jammer man!', 'Lekker voor je!', 'Bro... gaat het?', 'Ik ga stuk!', '6|Je moet juist niet de 6e kaart opgooien he!'],
+  ['Boem!', 'Lekker voor je, {n}!', 'Jammer man!', 'Sukkeltje!', 'Ouch!', 'Bro... gaat het?', 'Ik ga stuk!', 'Snap je het nog wel helemaal?', 'Even allemaal {n} uitlachen!', '6|Je moet juist niet de 6e kaart opgooien he!'],
+  ['Hoe dom ben je!', 'Lekker voor je, {n}!', 'Sukkeltje!', 'Tantoe Sulletje!', 'Jammer man, dombo!', 'Loser!', 'Snap je het nog wel helemaal?', 'Ben je helemaal 100?', 'Vraag Claude even om te helpen!', 'Even allemaal {n} uitlachen!', '6|Je moet juist niet de 6e kaart opgooien he!'],
+  ['Wat kan je wel?!', 'Hoe dom ben je, sukkel!', 'Tantoe Sulletje!', 'Boem, dombo!', 'Ouch, kneus!', 'Loser!', 'Hond!', 'Ben je helemaal 100?', 'Vraag Claude even om te helpen!', 'Ongekende {titel}!', 'Snap je het nog wel helemaal?'],
+  ['Hoe dom ben je, dombo?!', 'Wat kan je wel, kneus?!', 'Lekker voor je, bitch!', 'Tantoe Sulletje!', 'Boem, bitch!', 'Fucking loser!', 'Loser, bitch!', 'Hond!', 'Ongekende {titel}!', 'Ben je helemaal 100?!', 'Vraag Claude even om te helpen!', 'Even allemaal {n} uitlachen!'],
+  ['Boem, bitch!', 'Hoe dom ben je, dombo?!', 'Wat kan je wel, kneus?!', 'Lekker voor je, bitch!', 'Tantoe Sulletje!', 'Hoppa bitch!', 'Fucking loser!', 'Fucking loser, {n}!', 'Loser, dombo!', 'Hond!', 'Ongekende {titel}!', 'Ben je helemaal 100?!', 'Ik ga stuk!', 'Bro... gaat het?', 'Even allemaal {n} uitlachen!'],
 ];
+// Titels voor {titel} (voor iedereen dezelfde, via de gedeelde seed)
+const TITELS = ['sukkel', 'dombo', 'kneus', 'loser', 'hond', 'bitch'];
 // Voorspelbaar 'toeval': dezelfde seed geeft bij elke speler dezelfde tekst, kanteling, vonken en schudbeweging.
 const seeded = (a) => () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-// zeldzame jumpscare bij 10+ punten; alvast inladen zodat hij direct in beeld is
+// Zeldzame 'uitlach-foto' bij 10+ punten. Plaatjes staan in public/memes/; de namen in public/memes/index.json
+// (bijv. ["lachen.jpg", "wijzen.png"]). Ontbreekt de lijst of een bestand, dan wordt dat gewoon overgeslagen.
+// Voor iedereen komt dezelfde lijst, dus iedereen ziet bij dezelfde klap hetzelfde plaatje.
 const MEME_CHANCE = 0.35;
-try { new Image().src = 'scream.jpg'; } catch {}
+let MEME_FILES = [];
+const memeOk = {};
+fetch('memes/index.json').then((r) => (r.ok ? r.json() : [])).then((list) => {
+  MEME_FILES = (Array.isArray(list) ? list : []).filter((f) => /^[\w.-]+\.(jpe?g|png|webp|gif)$/i.test(f));
+  MEME_FILES.forEach((f) => { const i = new Image(); i.onload = () => { memeOk[f] = true; }; i.src = 'memes/' + f; });
+}).catch(() => {});
 const COLORS = ['#ef4444', '#f97316', '#fbbf24', '#ffffff', '#a855f7'];
 
 /** De klap. L = niveau (0 = licht). Hoe hoger, hoe heftiger: schudden, flits, schokgolven, scherven, bas, trillen. */
-function impact(L, rect, who = '', seed = 0) {
+function impact(L, rect, who = '', seed = 0, kind = '') {
   const k = strength(L);
   const rnd = seeded(seed * 2654435761 + 12345);
   sfx.slam(k);
@@ -294,32 +303,38 @@ function impact(L, rect, who = '', seed = 0) {
   }
   // schreeuw (altijd maar één tegelijk)
   document.querySelectorAll('.shout').forEach((e) => e.remove());
-  const pool = SHOUTS[L];
-  let txt = pool[(rnd() * pool.length) | 0].replace('{n}', who || 'jij');
+  // '6|…' kreten horen alleen bij een echte zesde-kaart-straf; bij 'te lage kaart' slaan ze nergens op
+  const pool = SHOUTS[L].filter((s) => !s.startsWith('6|') || kind === 'sixth').map((s) => s.replace(/^6\|/, ''));
+  let txt = pool[(rnd() * pool.length) | 0].replace('{n}', who || 'jij').replace('{naam}', who || 'jij');
+  txt = txt.replace('{titel}', TITELS[(rnd() * TITELS.length) | 0]);
   if (L >= 4) txt = txt.toUpperCase();
   const t = document.createElement('div');
-  t.className = 'shout';
+  t.className = 'shout' + (txt.length > 22 ? ' wrap' : '');
   t.textContent = txt;
-  t.style.setProperty('--fs', 1.6 + k * 0.9 + 'rem');
+  t.style.setProperty('--fs', (1.6 + k * 0.9) * (txt.length > 22 ? 0.62 : 1) + 'rem');
   t.style.setProperty('--dur', 2.3 + L * 0.15 + 's');
   t.style.setProperty('--tilt', (rnd() > 0.5 ? 1 : -1) * (2 + k) + 'deg');
   document.body.appendChild(t);
   // echt meten: de tekst (incl. de 1,25x piek van de animatie) moet binnen het scherm blijven
-  const maxW = innerWidth * 0.7;
-  const w = t.offsetWidth; // layoutbreedte, zonder de schaal van de animatie
-  if (w > maxW) t.style.setProperty('--fs', (1.6 + k * 0.9) * (maxW / w) + 'rem');
+  const maxW = innerWidth * 0.64;
+  const w = Math.max(t.offsetWidth, t.scrollWidth); // layoutbreedte (incl. het langste woord), zonder de schaal van de animatie
+  if (w > maxW) t.style.setProperty('--fs', parseFloat(t.style.getPropertyValue('--fs')) * (maxW / w) + 'rem');
   t.addEventListener('animationend', () => t.remove());
-  // heel af en toe (niveau 6, voor iedereen op hetzelfde moment): de schreeuwende kat
+  // heel af en toe (niveau 6, voor iedereen op hetzelfde moment): iedereen lacht je uit
   if (L === 6 && rnd() < MEME_CHANCE) {
-    document.querySelectorAll('.meme').forEach((e) => e.remove());
-    const m = document.createElement('img');
-    m.className = 'meme';
-    m.src = 'scream.jpg';
-    m.alt = '';
-    m.style.setProperty('--dur', 2.3 + L * 0.15 + 's');
-    m.style.setProperty('--tilt', (rnd() > 0.5 ? 1 : -1) * (3 + rnd() * 4) + 'deg');
-    document.body.appendChild(m);
-    m.addEventListener('animationend', () => m.remove());
+    const file = MEME_FILES.length ? MEME_FILES[(rnd() * MEME_FILES.length) | 0] : null; // altijd dezelfde reeks, voor iedereen gelijk
+    const tilt = (rnd() > 0.5 ? 1 : -1) * (3 + rnd() * 4);
+    if (file && memeOk[file]) {
+      document.querySelectorAll('.meme').forEach((e) => e.remove());
+      const m = document.createElement('img');
+      m.className = 'meme';
+      m.src = 'memes/' + file;
+      m.alt = '';
+      m.style.setProperty('--dur', 2.3 + L * 0.15 + 's');
+      m.style.setProperty('--tilt', tilt + 'deg');
+      document.body.appendChild(m);
+      m.addEventListener('animationend', () => m.remove());
+    }
   }
 }
 
@@ -766,7 +781,7 @@ function renderGame() {
           const dur = 560 + 45 * k;
           fly(ghost, from, target, {
             sel, dur, slam: k, z: 32, lift: -(30 + k * 24), rot: -6 - k * 3,
-            onland: (el) => impact(L, (el || target).getBoundingClientRect(), name(ev.playerId), ev.seq * 31 + ev.card),
+            onland: (el) => impact(L, (el || target).getBoundingClientRect(), name(ev.playerId), ev.seq * 31 + ev.card, ev.type),
           });
           sfx.whoosh();
           takeRow(ev, takenRects, dur + 40, L);
