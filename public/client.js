@@ -219,11 +219,19 @@ function fly(ghost, from, toEl, o = {}) {
 const elFrom = (html) => { const t = document.createElement('div'); t.innerHTML = html.trim(); return t.firstElementChild; };
 
 const lvlOf = (pts) => (pts >= 20 ? 5 : pts >= 15 ? 4 : pts >= 10 ? 3 : pts >= 5 ? 2 : 1);
-const SHOUT = ['', '', 'Pech!', 'Auw!', 'AUTSCH!!', 'KOEIENDRAMA!!!'];
+// Korte, brutale kreten; {n} = naam van de speler die de rij pakt. Hoe zwaarder de klap, hoe harder het wordt.
+const SHOUTS = [
+  [],
+  [],
+  ['Boem!', 'Tja...', 'Oeps hoor', 'Lekker voor je', 'Pech, {n}'],
+  ['BOEM!', 'Lekker voor je, {n}!', 'Hoppa!', 'Au, dat doet pijn', 'Dankjewel, {n}!', 'Slim hoor, {n}', 'Tantoe Sulletje'],
+  ['HOPPA BITCH!', 'BOEM!', 'Pak aan, {n}!', 'Slecht gespeeld hè', 'LEKKER VOOR JE, {n}!', 'TANTOE SULLETJE!'],
+  ['HOPPA BITCH!!', 'BOEEEM!!!', 'LEKKER VOOR JE, {n}!!', 'Zielig man...', 'Dikke pech joh, {n}', '{n} zit in de put', 'TANTOE SULLETJE!!'],
+];
 const COLORS = ['#ef4444', '#f97316', '#fbbf24', '#ffffff', '#a855f7'];
 
 /** De klap: hoe hoger het niveau, hoe heftiger (schudden, flits, schokgolf, scherven, bas, trillen). */
-function impact(lvl, rect) {
+function impact(lvl, rect, who = '') {
   sfx.slam(lvl);
   buzz([[20], [40, 30, 50], [60, 40, 90], [80, 40, 110, 40, 140], [120, 50, 160, 50, 220]][lvl - 1]);
   if (reduced()) return;
@@ -278,10 +286,17 @@ function impact(lvl, rect) {
   if (lvl >= 2) {
     const t = document.createElement('div');
     t.className = 'shout';
-    t.textContent = SHOUT[lvl];
+    const pool = SHOUTS[lvl];
+    const txt = pool[(Math.random() * pool.length) | 0].replace('{n}', who || 'jij');
+    t.textContent = txt;
+    // lange teksten kleiner, zodat ze altijd in beeld passen
     t.style.setProperty('--fs', 1.6 + lvl * 0.9 + 'rem');
     t.style.setProperty('--tilt', (Math.random() > 0.5 ? 1 : -1) * (2 + lvl) + 'deg');
     document.body.appendChild(t);
+    // echt meten: de tekst (incl. de 1,25x piek van de animatie) moet binnen het scherm blijven
+    const maxW = innerWidth * 0.7; // de animatie piekt op 1,25x
+    const w = t.offsetWidth; // layoutbreedte, zonder de schaal van de animatie
+    if (w > maxW) t.style.setProperty('--fs', (1.6 + lvl * 0.9) * (maxW / w) + 'rem');
     t.addEventListener('animationend', () => t.remove());
   }
 }
@@ -695,7 +710,7 @@ function renderGame() {
           const dur = 620 + lvl * 70;
           fly(ghost, from, target, {
             sel, dur, slam: lvl, z: 32, lift: -(30 + lvl * 24), rot: -6 - lvl * 3,
-            onland: (el) => impact(lvl, (el || target).getBoundingClientRect()),
+            onland: (el) => impact(lvl, (el || target).getBoundingClientRect(), name(ev.playerId)),
           });
           sfx.whoosh();
           takeRow(ev, takenRects, dur + 40, lvl);
