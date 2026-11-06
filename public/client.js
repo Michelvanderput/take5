@@ -23,7 +23,7 @@ function toast(m) {
 
 function connect(onOpen) {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  ws = new WebSocket(`${proto}://${location.host}`);
+  ws = new WebSocket(window.TAKE5_WS || `${proto}://${location.host}`);
   ws.onopen = () => onOpen && onOpen();
   ws.onmessage = (e) => {
     const msg = JSON.parse(e.data);
