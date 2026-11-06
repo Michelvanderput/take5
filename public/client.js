@@ -2,7 +2,6 @@
 const app = document.getElementById('app');
 const toastEl = document.getElementById('toast');
 
-let ws = null;
 let S = null; // laatste state van de server
 let selected = null;
 let lastSeq = 0;
@@ -21,29 +20,36 @@ function toast(m) {
   toast.t = setTimeout(() => (toastEl.hidden = true), 3000);
 }
 
-function connect(onOpen) {
-  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  ws = new WebSocket(window.TAKE5_WS || `${proto}://${location.host}`);
-  ws.onopen = () => onOpen && onOpen();
-  ws.onmessage = (e) => {
-    const msg = JSON.parse(e.data);
-    if (msg.t === 'joined') {
-      session = { code: msg.code, token: msg.token };
-      localStorage.setItem('take5', JSON.stringify(session));
-    } else if (msg.t === 'state') {
-      S = msg.s;
-      render();
-    } else if (msg.t === 'error') {
-      toast(msg.m);
-      if (msg.m === 'Sessie verlopen' || msg.m === 'Kamer niet gevonden') clearSession();
-    } else if (msg.t === 'kicked') {
-      clearSession();
-      toast('Je bent uit de kamer gezet');
-    }
-  };
-  ws.onclose = () => {
-    if (session) setTimeout(() => connect(() => send({ t: 'resume', ...session })), 1500);
-  };
+const API = '/api/game';
+let busy = false;
+
+async function post(m) {
+  const r = await fetch(API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...m, ...(session || {}) }),
+  });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || 'Fout');
+  return j;
+}
+
+function onResponse(j) {
+  if (j.token) {
+    session = { code: j.code, token: j.token, id: j.id };
+    localStorage.setItem('take5', JSON.stringify(session));
+  }
+  if (j.left) return clearSession();
+  if (S && S.code === j.state.code && j.state.v < S.v) return; // oud antwoord
+  const changed = !S || JSON.stringify(S) !== JSON.stringify(j.state);
+  S = j.state;
+  if (changed) render();
+}
+
+function fail(e) {
+  if (e instanceof TypeError) return; // netwerk even weg: volgende poll probeert opnieuw
+  toast(e.message);
+  if (e.message === 'Sessie verlopen' || e.message === 'Kamer niet gevonden') clearSession();
 }
 
 function clearSession() {
@@ -54,13 +60,15 @@ function clearSession() {
 }
 
 function send(m) {
-  if (ws && ws.readyState === 1) ws.send(JSON.stringify(m));
+  return post(m).then(onResponse).catch(fail);
 }
 
-function ensureConn(then) {
-  if (ws && ws.readyState === 1) return then();
-  connect(then);
-}
+// Elke ~0,8 s de stand ophalen (Vercel kent geen WebSockets).
+setInterval(() => {
+  if (!session || busy) return;
+  busy = true;
+  post({ t: 'poll' }).then(onResponse).catch(fail).finally(() => (busy = false));
+}, 800);
 
 // ---------- rendering ----------
 function cardHtml(n, cls = '') {
@@ -97,9 +105,9 @@ function renderHome() {
     localStorage.setItem('take5name', pendingName);
     return pendingName || 'Speler';
   };
-  document.getElementById('create').onclick = () => ensureConn(() => send({ t: 'create', name: name() }));
+  document.getElementById('create').onclick = () => send({ t: 'create', name: name() });
   document.getElementById('join').onclick = () =>
-    ensureConn(() => send({ t: 'join', name: name(), code: document.getElementById('code').value }));
+    send({ t: 'join', name: name(), code: document.getElementById('code').value });
 }
 
 function playersHtml(waiting) {
@@ -228,7 +236,7 @@ setInterval(() => {
 // ---------- start ----------
 const urlCode = new URLSearchParams(location.search).get('code');
 if (session) {
-  ensureConn(() => send({ t: 'resume', ...session }));
+  send({ t: 'resume' });
 } else {
   render();
   if (urlCode) setTimeout(() => { const c = document.getElementById('code'); if (c) c.value = urlCode.toUpperCase(); }, 0);
