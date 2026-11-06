@@ -228,12 +228,12 @@ const SHOUTS = [
   ['Boem!', 'Ouch!', 'Jammer man!', 'Lekker voor je!', 'Bro... gaat het?', 'Ik ga stuk!', 'Ik kom niet meer bij!', '6|Je moet juist niet de 6e kaart opgooien he!'],
   ['Boem!', 'Lekker voor je, {n}!', 'Jammer man!', 'Sukkeltje!', 'Ouch!', 'Bro... gaat het?', 'Ik ga stuk!', 'Ik kom niet meer bij!', 'Snap je het nog wel helemaal?', 'Even allemaal {n} uitlachen!', '6|Je moet juist niet de 6e kaart opgooien he!'],
   ['Hoe dom ben je!', 'Lekker voor je, {n}!', 'Sukkeltje!', 'Tantoe Sulletje!', 'Jammer man, dombo!', 'Loser!', 'Snap je het nog wel helemaal?', 'Ben je helemaal 100?', 'Vraag Claude even om te helpen!', 'Even allemaal {n} uitlachen!', '6|Je moet juist niet de 6e kaart opgooien he!'],
-  ['Wat kan je wel?!', 'Hoe dom ben je, sukkel!', 'Tantoe Sulletje!', 'Boem, dombo!', 'Ouch, kneus!', 'Loser!', 'Hond!', 'Ben je helemaal 100?', 'Vraag Claude even om te helpen!', 'Ongekende {titel}!', 'Snap je het nog wel helemaal?'],
-  ['Hoe dom ben je, dombo?!', 'Wat kan je wel, kneus?!', 'Lekker voor je, bitch!', 'Tantoe Sulletje!', 'Boem, bitch!', 'Fucking loser!', 'Loser, bitch!', 'Hond!', 'Ongekende {titel}!', 'Ben je helemaal 100?!', 'Vraag Claude even om te helpen!', 'Even allemaal {n} uitlachen!'],
-  ['Boem, bitch!', 'Hoe dom ben je, dombo?!', 'Wat kan je wel, kneus?!', 'Lekker voor je, bitch!', 'Tantoe Sulletje!', 'Hoppa bitch!', 'Fucking loser!', 'Fucking loser, {n}!', 'Loser, dombo!', 'Hond!', 'Ongekende {titel}!', 'Ben je helemaal 100?!', 'Ik ga stuk!', 'Ik kom niet meer bij!', 'Bro... gaat het?', 'Even allemaal {n} uitlachen!'],
+  ['Wat kan je wel?!', 'Hoe dom ben je, sukkel!', 'Tantoe Sulletje!', 'Boem, dombo!', 'Ouch, kneus!', 'Loser!', 'Ben je helemaal 100?', 'Vraag Claude even om te helpen!', 'Ongekende {titel}!', 'Snap je het nog wel helemaal?'],
+  ['Hoe dom ben je, dombo?!', 'Wat kan je wel, kneus?!', 'Lekker voor je, bitch!', 'Tantoe Sulletje!', 'Boem, bitch!', 'Fucking loser!', 'Loser, bitch!', 'Ongekende {titel}!', 'Ben je helemaal 100?!', 'Vraag Claude even om te helpen!', 'Even allemaal {n} uitlachen!'],
+  ['Boem, bitch!', 'Hoe dom ben je, dombo?!', 'Wat kan je wel, kneus?!', 'Lekker voor je, bitch!', 'Tantoe Sulletje!', 'Hoppa bitch!', 'Fucking loser!', 'Fucking loser, {n}!', 'Loser, dombo!', 'Ongekende {titel}!', 'Ben je helemaal 100?!', 'Ik ga stuk!', 'Ik kom niet meer bij!', 'Bro... gaat het?', 'Even allemaal {n} uitlachen!'],
 ];
 // Titels voor {titel} (voor iedereen dezelfde, via de gedeelde seed)
-const TITELS = ['sukkel', 'dombo', 'kneus', 'loser', 'hond', 'bitch'];
+const TITELS = ['sukkel', 'dombo', 'kneus', 'loser', 'bitch'];
 // Voorspelbaar 'toeval': dezelfde seed geeft bij elke speler dezelfde tekst, kanteling, vonken en schudbeweging.
 const seeded = (a) => () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 // Zeldzame 'uitlach-foto' bij 10+ punten. Plaatjes staan in public/memes/; de namen in public/memes/index.json
