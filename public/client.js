@@ -227,16 +227,19 @@ const SHOUTS = [
   [],
   ['Boem!', 'Ouch!', 'Jammer man!', 'Lekker voor je!'],
   ['Boem!', 'Lekker voor je, {n}!', 'Jammer man!', 'Sukkeltje!', 'Ouch!'],
-  ['Hoe dom ben je!', 'Lekker voor je, {n}!', 'Sukkeltje!', 'Tantoe Sulletje!', 'Jammer man, dombo!'],
-  ['Wat kan je wel?!', 'Hoe dom ben je, sukkel!', 'Tantoe Sulletje!', 'Boem, dombo!', 'Ouch, kneus!'],
-  ['Hoe dom ben je, dombo?!', 'Wat kan je wel, kneus?!', 'Lekker voor je, bitch!', 'Tantoe Sulletje, sukkel!', 'Boem, bitch!'],
-  ['Boem, bitch!', 'Hoe dom ben je, dombo?!', 'Wat kan je wel, kneus?!', 'Lekker voor je, bitch!', 'Tantoe Sulletje, kneus!', 'Hoppa bitch!'],
+  ['Hoe dom ben je!', 'Lekker voor je, {n}!', 'Sukkeltje!', 'Tantoe Sulletje!', 'Jammer man, dombo!', 'Loser!'],
+  ['Wat kan je wel?!', 'Hoe dom ben je, sukkel!', 'Tantoe Sulletje!', 'Boem, dombo!', 'Ouch, kneus!', 'Loser!', 'Hond!'],
+  ['Hoe dom ben je, dombo?!', 'Wat kan je wel, kneus?!', 'Lekker voor je, bitch!', 'Tantoe Sulletje, sukkel!', 'Boem, bitch!', 'Fucking loser!', 'Loser, bitch!', 'Hond!'],
+  ['Boem, bitch!', 'Hoe dom ben je, dombo?!', 'Wat kan je wel, kneus?!', 'Lekker voor je, bitch!', 'Tantoe Sulletje, kneus!', 'Hoppa bitch!', 'Fucking loser!', 'Fucking loser, {n}!', 'Loser, dombo!', 'Hond!'],
 ];
+// Voorspelbaar 'toeval': dezelfde seed geeft bij elke speler dezelfde tekst, kanteling, vonken en schudbeweging.
+const seeded = (a) => () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 const COLORS = ['#ef4444', '#f97316', '#fbbf24', '#ffffff', '#a855f7'];
 
 /** De klap. L = niveau (0 = licht). Hoe hoger, hoe heftiger: schudden, flits, schokgolven, scherven, bas, trillen. */
-function impact(L, rect, who = '') {
+function impact(L, rect, who = '', seed = 0) {
   const k = strength(L);
+  const rnd = seeded(seed * 2654435761 + 12345);
   sfx.slam(k);
   buzz(L === 0 ? [20] : k < 2.8 ? [40, 30, 50] : k < 3.6 ? [60, 40, 90] : k < 4.6 ? [80, 40, 110, 40, 140] : [120, 50, 160, 50, 220]);
   if (L === 0 || reduced()) return;
@@ -247,7 +250,7 @@ function impact(L, rect, who = '') {
   const steps = Math.round(8 + k * 3);
   const kf = Array.from({ length: steps }, (_, i) => {
     const f = 1 - i / steps;
-    return { transform: `translate(${(Math.random() - 0.5) * 2 * amp * f}px, ${(Math.random() - 0.5) * 2 * amp * f}px) rotate(${(Math.random() - 0.5) * k * 0.3 * f}deg)` };
+    return { transform: `translate(${(rnd() - 0.5) * 2 * amp * f}px, ${(rnd() - 0.5) * 2 * amp * f}px) rotate(${(rnd() - 0.5) * k * 0.3 * f}deg)` };
   }).concat({ transform: 'none' });
   [...app.children].filter((e) => !e.classList.contains('dock') && !e.classList.contains('rscore'))
     .forEach((e) => e.animate(kf, { duration: 280 + k * 130, easing: 'linear' }));
@@ -273,28 +276,30 @@ function impact(L, rect, who = '') {
   for (let i = 0; i < n; i++) {
     const p = document.createElement('div');
     p.className = 'spark';
-    const ang = Math.random() * Math.PI * 2;
-    const dist = 50 + Math.random() * (60 + k * 55);
-    const sz = 4 + Math.random() * (3 + k * 1.5);
-    Object.assign(p.style, { left: cx + 'px', top: cy + 'px', width: sz + 'px', height: sz * (Math.random() > 0.5 ? 1 : 2.2) + 'px', background: COLORS[(Math.random() * COLORS.length) | 0] });
+    const ang = rnd() * Math.PI * 2;
+    const dist = 50 + rnd() * (60 + k * 55);
+    const sz = 4 + rnd() * (3 + k * 1.5);
+    Object.assign(p.style, { left: cx + 'px', top: cy + 'px', width: sz + 'px', height: sz * (rnd() > 0.5 ? 1 : 2.2) + 'px', background: COLORS[(rnd() * COLORS.length) | 0] });
     document.body.appendChild(p);
     const dx = Math.cos(ang) * dist;
     const dy = Math.sin(ang) * dist;
     p.animate([
       { transform: 'translate(-50%,-50%) rotate(0)', opacity: 1 },
-      { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy - 20}px)) rotate(${Math.random() * 540}deg)`, opacity: 1, offset: 0.55 },
-      { transform: `translate(calc(-50% + ${dx * 1.1}px), calc(-50% + ${dy + 70 + k * 15}px)) rotate(${Math.random() * 900}deg)`, opacity: 0 },
-    ], { duration: 600 + Math.random() * (400 + k * 120), easing: 'cubic-bezier(.2,.7,.4,1)', fill: 'forwards' }).finished.then(() => p.remove(), () => p.remove());
+      { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy - 20}px)) rotate(${rnd() * 540}deg)`, opacity: 1, offset: 0.55 },
+      { transform: `translate(calc(-50% + ${dx * 1.1}px), calc(-50% + ${dy + 70 + k * 15}px)) rotate(${rnd() * 900}deg)`, opacity: 0 },
+    ], { duration: 600 + rnd() * (400 + k * 120), easing: 'cubic-bezier(.2,.7,.4,1)', fill: 'forwards' }).finished.then(() => p.remove(), () => p.remove());
   }
-  // schreeuw
+  // schreeuw (altijd maar één tegelijk)
+  document.querySelectorAll('.shout').forEach((e) => e.remove());
   const pool = SHOUTS[L];
-  let txt = pool[(Math.random() * pool.length) | 0].replace('{n}', who || 'jij');
+  let txt = pool[(rnd() * pool.length) | 0].replace('{n}', who || 'jij');
   if (L >= 4) txt = txt.toUpperCase();
   const t = document.createElement('div');
   t.className = 'shout';
   t.textContent = txt;
   t.style.setProperty('--fs', 1.6 + k * 0.9 + 'rem');
-  t.style.setProperty('--tilt', (Math.random() > 0.5 ? 1 : -1) * (2 + k) + 'deg');
+  t.style.setProperty('--dur', 2.3 + L * 0.15 + 's');
+  t.style.setProperty('--tilt', (rnd() > 0.5 ? 1 : -1) * (2 + k) + 'deg');
   document.body.appendChild(t);
   // echt meten: de tekst (incl. de 1,25x piek van de animatie) moet binnen het scherm blijven
   const maxW = innerWidth * 0.7;
@@ -306,6 +311,7 @@ function impact(L, rect, who = '') {
 /** Na de klap: de gepakte rij vliegt naar de speler; +punten zweeft omhoog. `delay`: wacht op de klap. */
 function takeRow(ev, rects, delay = 0, L = lvlOf(ev.points)) {
   const k = strength(L);
+  const rnd = seeded(ev.seq * 977 + ev.card);
   const chip = app.querySelector(`.pl[data-pid="${ev.playerId}"] .avatar`);
   if (!chip) return;
   const cr = chip.getBoundingClientRect();
@@ -318,10 +324,10 @@ function takeRow(ev, rects, delay = 0, L = lvlOf(ev.points)) {
     g.style.setProperty('--w', r.width + 'px');
     Object.assign(g.style, { position: 'fixed', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px', margin: 0, zIndex: 31, pointerEvents: 'none' });
     document.body.appendChild(g);
-    const rotz = (Math.random() - 0.5) * (40 + k * 30);
+    const rotz = (rnd() - 0.5) * (40 + k * 30);
     g.animate([
       { transform: 'none', opacity: 1 },
-      { transform: `translate(${(Math.random() - 0.5) * k * 12}px, ${-10 - k * 5}px) scale(${1.05 + k * 0.03}) rotate(${rotz / 3}deg)`, opacity: 1, offset: 0.22 },
+      { transform: `translate(${(rnd() - 0.5) * k * 12}px, ${-10 - k * 5}px) scale(${1.05 + k * 0.03}) rotate(${rotz / 3}deg)`, opacity: 1, offset: 0.22 },
       { transform: `translate(${cx - r.left - r.width / 2}px, ${cy - r.top - r.height / 2}px) scale(.18) rotate(${rotz}deg)`, opacity: 0.1 },
     ], { duration: dur, delay: delay + i * gap, easing: 'cubic-bezier(.5,0,.8,.4)', fill: 'both' }).finished.then(() => g.remove(), () => g.remove());
   });
@@ -360,8 +366,9 @@ function tweenScores() {
   });
 }
 
-function confetti() {
+function confetti(seed = 1) {
   if (reduced()) return;
+  const rnd = seeded(seed * 4099 + 7);
   const cv = document.createElement('canvas');
   Object.assign(cv.style, { position: 'fixed', inset: 0, width: '100%', height: '100%', zIndex: 40, pointerEvents: 'none' });
   const dpr = Math.min(3, window.devicePixelRatio || 1);
@@ -371,9 +378,9 @@ function confetti() {
   x.scale(dpr, dpr);
   const cols = ['#34d399', '#22d3ee', '#fbbf24', '#ef4444', '#a855f7', '#ffffff'];
   const ps = Array.from({ length: 160 }, () => ({
-    x: innerWidth / 2 + (Math.random() - 0.5) * 200, y: innerHeight * 0.55, vx: (Math.random() - 0.5) * 16,
-    vy: -Math.random() * 18 - 6, w: 6 + Math.random() * 6, h: 4 + Math.random() * 5, r: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4,
-    c: cols[(Math.random() * cols.length) | 0],
+    x: innerWidth / 2 + (rnd() - 0.5) * 200, y: innerHeight * 0.55, vx: (rnd() - 0.5) * 16,
+    vy: -rnd() * 18 - 6, w: 6 + rnd() * 6, h: 4 + rnd() * 5, r: rnd() * 6, vr: (rnd() - 0.5) * 0.4,
+    c: cols[(rnd() * cols.length) | 0],
   }));
   const t0 = performance.now();
   const loop = (t) => {
@@ -733,7 +740,7 @@ function renderGame() {
           const dur = 560 + 45 * k;
           fly(ghost, from, target, {
             sel, dur, slam: k, z: 32, lift: -(30 + k * 24), rot: -6 - k * 3,
-            onland: (el) => impact(L, (el || target).getBoundingClientRect(), name(ev.playerId)),
+            onland: (el) => impact(L, (el || target).getBoundingClientRect(), name(ev.playerId), ev.seq * 31 + ev.card),
           });
           sfx.whoosh();
           takeRow(ev, takenRects, dur + 40, L);
@@ -764,7 +771,7 @@ function renderGame() {
       });
     }
     if (needMyRow && !prev.myRow) { sfx.alert(); buzz([60, 60, 60]); }
-    if (g === 'gameOver' && !prev.over) { sfx.win(); confetti(); buzz([40, 40, 40, 40, 120]); }
+    if (g === 'gameOver' && !prev.over) { sfx.win(); confetti([...S.code].reduce((h, ch) => h * 31 + ch.charCodeAt(0), 7) + S.round); buzz([40, 40, 40, 40, 120]); }
   }
   if (first && g === 'choosing') { /* niets: geen animatie bij herladen */ }
 
