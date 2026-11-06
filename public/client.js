@@ -8,6 +8,7 @@ let lastSeq = 0;
 let session = null;
 try { session = JSON.parse(localStorage.getItem('take5') || 'null'); } catch {}
 let pendingName = localStorage.getItem('take5name') || '';
+let pendingCode = '';
 
 const points = (n) => (n === 55 ? 7 : n % 11 === 0 ? 5 : n % 10 === 0 ? 3 : n % 5 === 0 ? 2 : 1);
 const sum = (a) => a.reduce((s, c) => s + points(c), 0);
@@ -28,7 +29,7 @@ async function post(m) {
   const r = await fetch(API, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...m, ...(session || {}) }),
+    body: JSON.stringify({ ...m, ...(session ? { code: session.code, token: session.token, pid: session.id } : {}) }),
   });
   const j = await r.json();
   if (!r.ok) throw new Error(j.error || 'Fout');
@@ -54,7 +55,7 @@ function onResponse(j) {
 function fail(e) {
   if (e instanceof TypeError) return; // netwerk even weg: volgende poll probeert opnieuw
   toast(e.message);
-  if (e.message === 'Sessie verlopen' || e.message === 'Kamer niet gevonden') clearSession();
+  if (e.message === 'Sessie verlopen' || (session && e.message === 'Kamer niet gevonden')) clearSession();
 }
 
 function clearSession() {
@@ -218,60 +219,63 @@ function fly(ghost, from, toEl, o = {}) {
 
 const elFrom = (html) => { const t = document.createElement('div'); t.innerHTML = html.trim(); return t.firstElementChild; };
 
-const lvlOf = (pts) => (pts >= 20 ? 5 : pts >= 15 ? 4 : pts >= 10 ? 3 : pts >= 5 ? 2 : 1);
-// Korte, brutale kreten; {n} = naam van de speler die de rij pakt. Hoe zwaarder de klap, hoe harder het wordt.
+// Niveaus volgen de punten: 5, 6, 7, 8, 9, 10+ (niveau 1..6). Onder de 5 punten: alleen een lichte landing.
+const lvlOf = (pts) => (pts < 5 ? 0 : Math.min(pts, 10) - 4);
+const strength = (L) => (L ? 1.6 + L * 0.7 : 1); // vloeiende sterkte voor alle effecten
+// Korte, brutale kreten; {n} = naam van de speler die de rij pakt. Van vriendelijk (5 punten) naar hard (10+).
 const SHOUTS = [
   [],
-  [],
-  ['Boem!', 'Tja...', 'Oeps hoor', 'Lekker voor je', 'Pech, {n}'],
-  ['BOEM!', 'Lekker voor je, {n}!', 'Hoppa!', 'Au, dat doet pijn', 'Dankjewel, {n}!', 'Slim hoor, {n}', 'Tantoe Sulletje'],
-  ['HOPPA BITCH!', 'BOEM!', 'Pak aan, {n}!', 'Slecht gespeeld hè', 'LEKKER VOOR JE, {n}!', 'TANTOE SULLETJE!'],
-  ['HOPPA BITCH!!', 'BOEEEM!!!', 'LEKKER VOOR JE, {n}!!', 'Zielig man...', 'Dikke pech joh, {n}', '{n} zit in de put', 'TANTOE SULLETJE!!'],
+  ['Boem!', 'Ouch!', 'Jammer man!', 'Lekker voor je!'],
+  ['Boem!', 'Lekker voor je, {n}!', 'Jammer man!', 'Sukkeltje!', 'Ouch!'],
+  ['Hoe dom ben je!', 'Lekker voor je, {n}!', 'Sukkeltje!', 'Tantoe Sulletje!', 'Jammer man, dombo!'],
+  ['Wat kan je wel?!', 'Hoe dom ben je, sukkel!', 'Tantoe Sulletje!', 'Boem, dombo!', 'Ouch, kneus!'],
+  ['Hoe dom ben je, dombo?!', 'Wat kan je wel, kneus?!', 'Lekker voor je, bitch!', 'Tantoe Sulletje, sukkel!', 'Boem, bitch!'],
+  ['Boem, bitch!', 'Hoe dom ben je, dombo?!', 'Wat kan je wel, kneus?!', 'Lekker voor je, bitch!', 'Tantoe Sulletje, kneus!', 'Hoppa bitch!'],
 ];
 const COLORS = ['#ef4444', '#f97316', '#fbbf24', '#ffffff', '#a855f7'];
 
-/** De klap: hoe hoger het niveau, hoe heftiger (schudden, flits, schokgolf, scherven, bas, trillen). */
-function impact(lvl, rect, who = '') {
-  sfx.slam(lvl);
-  buzz([[20], [40, 30, 50], [60, 40, 90], [80, 40, 110, 40, 140], [120, 50, 160, 50, 220]][lvl - 1]);
-  if (reduced()) return;
+/** De klap. L = niveau (0 = licht). Hoe hoger, hoe heftiger: schudden, flits, schokgolven, scherven, bas, trillen. */
+function impact(L, rect, who = '') {
+  const k = strength(L);
+  sfx.slam(k);
+  buzz(L === 0 ? [20] : k < 2.8 ? [40, 30, 50] : k < 3.6 ? [60, 40, 90] : k < 4.6 ? [80, 40, 110, 40, 140] : [120, 50, 160, 50, 220]);
+  if (L === 0 || reduced()) return;
   const cx = rect.left + rect.width / 2;
   const cy = rect.top + rect.height / 2;
-  // schermschudden
-  const amp = 2 + lvl * 3.2;
-  const steps = 8 + lvl * 3;
+  // schermschudden (alles behalve de vaste kaartenbalk: een transform op #app zou die laten verspringen)
+  const amp = 2 + k * 3.2;
+  const steps = Math.round(8 + k * 3);
   const kf = Array.from({ length: steps }, (_, i) => {
-    const k = 1 - i / steps;
-    return { transform: `translate(${(Math.random() - 0.5) * 2 * amp * k}px, ${(Math.random() - 0.5) * 2 * amp * k}px) rotate(${(Math.random() - 0.5) * lvl * 0.3 * k}deg)` };
+    const f = 1 - i / steps;
+    return { transform: `translate(${(Math.random() - 0.5) * 2 * amp * f}px, ${(Math.random() - 0.5) * 2 * amp * f}px) rotate(${(Math.random() - 0.5) * k * 0.3 * f}deg)` };
   }).concat({ transform: 'none' });
-  // schud alles behalve de vaste kaartenbalk (een transform op #app zou die laten verspringen)
   [...app.children].filter((e) => !e.classList.contains('dock') && !e.classList.contains('rscore'))
-    .forEach((e) => e.animate(kf, { duration: 280 + lvl * 130, easing: 'linear' }));
+    .forEach((e) => e.animate(kf, { duration: 280 + k * 130, easing: 'linear' }));
   // rode flits
   const fl = document.createElement('div');
   fl.className = 'flash';
-  fl.style.setProperty('--o', Math.min(0.55, 0.08 + lvl * 0.09));
+  fl.style.setProperty('--o', Math.min(0.55, 0.08 + k * 0.09));
   fl.style.setProperty('--x', cx + 'px'); fl.style.setProperty('--y', cy + 'px');
-  fl.style.animationDuration = 500 + lvl * 140 + 'ms';
+  fl.style.animationDuration = 500 + k * 140 + 'ms';
   document.body.appendChild(fl);
   fl.addEventListener('animationend', () => fl.remove());
   // schokgolven
-  for (let i = 0; i < Math.min(3, 1 + Math.floor(lvl / 2)); i++) {
+  for (let i = 0; i < Math.min(3, 1 + Math.floor(k / 2)); i++) {
     const r = document.createElement('div');
     r.className = 'shock';
-    Object.assign(r.style, { left: cx + 'px', top: cy + 'px', animationDelay: i * 110 + 'ms', animationDuration: 650 + lvl * 90 + 'ms' });
-    r.style.setProperty('--s', 5 + lvl * 2.2);
+    Object.assign(r.style, { left: cx + 'px', top: cy + 'px', animationDelay: i * 110 + 'ms', animationDuration: 650 + k * 90 + 'ms' });
+    r.style.setProperty('--s', 5 + k * 2.2);
     document.body.appendChild(r);
     r.addEventListener('animationend', () => r.remove());
   }
   // scherven / vonken
-  const n = lvl * 9 + 4;
+  const n = Math.round(k * 9 + 4);
   for (let i = 0; i < n; i++) {
     const p = document.createElement('div');
     p.className = 'spark';
     const ang = Math.random() * Math.PI * 2;
-    const dist = 50 + Math.random() * (60 + lvl * 55);
-    const sz = 4 + Math.random() * (3 + lvl * 1.5);
+    const dist = 50 + Math.random() * (60 + k * 55);
+    const sz = 4 + Math.random() * (3 + k * 1.5);
     Object.assign(p.style, { left: cx + 'px', top: cy + 'px', width: sz + 'px', height: sz * (Math.random() > 0.5 ? 1 : 2.2) + 'px', background: COLORS[(Math.random() * COLORS.length) | 0] });
     document.body.appendChild(p);
     const dx = Math.cos(ang) * dist;
@@ -279,61 +283,61 @@ function impact(lvl, rect, who = '') {
     p.animate([
       { transform: 'translate(-50%,-50%) rotate(0)', opacity: 1 },
       { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy - 20}px)) rotate(${Math.random() * 540}deg)`, opacity: 1, offset: 0.55 },
-      { transform: `translate(calc(-50% + ${dx * 1.1}px), calc(-50% + ${dy + 70 + lvl * 15}px)) rotate(${Math.random() * 900}deg)`, opacity: 0 },
-    ], { duration: 600 + Math.random() * (400 + lvl * 120), easing: 'cubic-bezier(.2,.7,.4,1)', fill: 'forwards' }).finished.then(() => p.remove(), () => p.remove());
+      { transform: `translate(calc(-50% + ${dx * 1.1}px), calc(-50% + ${dy + 70 + k * 15}px)) rotate(${Math.random() * 900}deg)`, opacity: 0 },
+    ], { duration: 600 + Math.random() * (400 + k * 120), easing: 'cubic-bezier(.2,.7,.4,1)', fill: 'forwards' }).finished.then(() => p.remove(), () => p.remove());
   }
   // schreeuw
-  if (lvl >= 2) {
-    const t = document.createElement('div');
-    t.className = 'shout';
-    const pool = SHOUTS[lvl];
-    const txt = pool[(Math.random() * pool.length) | 0].replace('{n}', who || 'jij');
-    t.textContent = txt;
-    // lange teksten kleiner, zodat ze altijd in beeld passen
-    t.style.setProperty('--fs', 1.6 + lvl * 0.9 + 'rem');
-    t.style.setProperty('--tilt', (Math.random() > 0.5 ? 1 : -1) * (2 + lvl) + 'deg');
-    document.body.appendChild(t);
-    // echt meten: de tekst (incl. de 1,25x piek van de animatie) moet binnen het scherm blijven
-    const maxW = innerWidth * 0.7; // de animatie piekt op 1,25x
-    const w = t.offsetWidth; // layoutbreedte, zonder de schaal van de animatie
-    if (w > maxW) t.style.setProperty('--fs', (1.6 + lvl * 0.9) * (maxW / w) + 'rem');
-    t.addEventListener('animationend', () => t.remove());
-  }
+  const pool = SHOUTS[L];
+  let txt = pool[(Math.random() * pool.length) | 0].replace('{n}', who || 'jij');
+  if (L >= 4) txt = txt.toUpperCase();
+  const t = document.createElement('div');
+  t.className = 'shout';
+  t.textContent = txt;
+  t.style.setProperty('--fs', 1.6 + k * 0.9 + 'rem');
+  t.style.setProperty('--tilt', (Math.random() > 0.5 ? 1 : -1) * (2 + k) + 'deg');
+  document.body.appendChild(t);
+  // echt meten: de tekst (incl. de 1,25x piek van de animatie) moet binnen het scherm blijven
+  const maxW = innerWidth * 0.7;
+  const w = t.offsetWidth; // layoutbreedte, zonder de schaal van de animatie
+  if (w > maxW) t.style.setProperty('--fs', (1.6 + k * 0.9) * (maxW / w) + 'rem');
+  t.addEventListener('animationend', () => t.remove());
 }
 
 /** Na de klap: de gepakte rij vliegt naar de speler; +punten zweeft omhoog. `delay`: wacht op de klap. */
-function takeRow(ev, rects, delay = 0, lvl = lvlOf(ev.points)) {
+function takeRow(ev, rects, delay = 0, L = lvlOf(ev.points)) {
+  const k = strength(L);
   const chip = app.querySelector(`.pl[data-pid="${ev.playerId}"] .avatar`);
   if (!chip) return;
   const cr = chip.getBoundingClientRect();
   const cx = cr.left + cr.width / 2;
   const cy = cr.top + cr.height / 2;
-  const dur = 650 + lvl * 90;
+  const dur = 540 + 45 * k;
+  const gap = 50 + 5 * k;
   (rects || []).forEach((r, i) => {
     const g = elFrom(cardHtml(ev.taken[i] ?? ev.taken[0]));
     g.style.setProperty('--w', r.width + 'px');
     Object.assign(g.style, { position: 'fixed', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px', margin: 0, zIndex: 31, pointerEvents: 'none' });
     document.body.appendChild(g);
-    const rotz = (Math.random() - 0.5) * (40 + lvl * 30);
+    const rotz = (Math.random() - 0.5) * (40 + k * 30);
     g.animate([
       { transform: 'none', opacity: 1 },
-      { transform: `translate(${(Math.random() - 0.5) * lvl * 12}px, ${-10 - lvl * 5}px) scale(${1.05 + lvl * 0.03}) rotate(${rotz / 3}deg)`, opacity: 1, offset: 0.22 },
+      { transform: `translate(${(Math.random() - 0.5) * k * 12}px, ${-10 - k * 5}px) scale(${1.05 + k * 0.03}) rotate(${rotz / 3}deg)`, opacity: 1, offset: 0.22 },
       { transform: `translate(${cx - r.left - r.width / 2}px, ${cy - r.top - r.height / 2}px) scale(.18) rotate(${rotz}deg)`, opacity: 0.1 },
-    ], { duration: dur, delay: delay + i * (60 + lvl * 8), easing: 'cubic-bezier(.5,0,.8,.4)', fill: 'both' }).finished.then(() => g.remove(), () => g.remove());
+    ], { duration: dur, delay: delay + i * gap, easing: 'cubic-bezier(.5,0,.8,.4)', fill: 'both' }).finished.then(() => g.remove(), () => g.remove());
   });
-  const total = delay + dur + (rects ? rects.length * (60 + lvl * 8) : 0) - 100;
+  const total = delay + dur + (rects ? rects.length * gap : 0) - 100;
   setTimeout(() => {
     chip.parentElement.classList.remove('hit'); void chip.offsetWidth;
-    chip.parentElement.style.setProperty('--amp', 5 + lvl * 3 + 'px');
+    chip.parentElement.style.setProperty('--amp', 5 + k * 3 + 'px');
     chip.parentElement.classList.add('hit');
     const f = document.createElement('div');
     f.className = 'floatpts';
-    f.style.fontSize = 1.9 + lvl * 0.5 + 'rem';
+    f.style.fontSize = 1.9 + k * 0.5 + 'rem';
     f.innerHTML = `+${ev.points} ${cowSvg()}`;
     f.style.left = cx + 'px'; f.style.top = cy + 'px';
     document.body.appendChild(f);
     f.addEventListener('animationend', () => f.remove());
-    sfx.moo(lvl);
+    sfx.moo(k);
     buzz([40, 50, 90]);
   }, Math.max(0, total * 0.75));
 }
@@ -429,7 +433,7 @@ function renderHome() {
         <h3>Meedoen</h3>
         <p class="muted">Heb je een code gekregen? Vul hem hier in.</p>
         <div class="field">
-          <input id="code" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;letter-spacing:.25em;text-align:center;font-weight:700">
+          <input id="code" placeholder="ABCD" maxlength="4" value="${esc(pendingCode)}" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" inputmode="text" enterkeyhint="go" aria-label="Kamercode" style="text-transform:uppercase;letter-spacing:.25em;text-align:center;font-weight:700">
           <button id="join" class="lg">Deelnemen</button>
         </div>
       </div>
@@ -442,7 +446,14 @@ function renderHome() {
   document.getElementById('create').onclick = () => send({ t: 'create', name: name() });
   document.getElementById('join').onclick = () =>
     send({ t: 'join', name: name(), code: document.getElementById('code').value });
-  document.getElementById('code').onkeydown = (e) => e.key === 'Enter' && document.getElementById('join').click();
+  const codeEl = document.getElementById('code');
+  codeEl.oninput = () => {
+    codeEl.value = codeEl.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
+    pendingCode = codeEl.value;
+  };
+  document.getElementById('name').oninput = (e) => { pendingName = e.target.value; };
+  // let op: een handler die `false` teruggeeft blokkeert de toets; daarom met accolades en zonder return
+  codeEl.onkeydown = (e) => { if (e.key === 'Enter') document.getElementById('join').click(); };
 }
 
 function playersHtml(waiting) {
@@ -459,6 +470,10 @@ function playersHtml(waiting) {
 
 function renderLobby() {
   setMain('lobby');
+  const me = S.players.find((p) => p.id === S.you) || {};
+  const waiting = S.players.filter((p) => !p.ready);
+  const allReady = waiting.length === 0;
+  const readyCount = S.players.length - waiting.length;
   document.documentElement.classList.remove('noscroll');
   lastSeq = 0;
   prev = { ...prev, round: 0, chosen: {}, revealKey: '', phase: '', over: false, myRow: false, scores: {} };
@@ -477,14 +492,20 @@ function renderLobby() {
       <div class="plist">${S.players.map((p) => `<div class="pitem">${avatar(p.name)}
         <span class="nm">${esc(p.name)}</span>
         ${p.id === S.hostId ? '<span class="tag">👑 host</span>' : ''}${p.bot ? '<span class="tag">bot</span>' : ''}${p.id === S.you ? '<span class="tag">jij</span>' : ''}
+        <span class="rdy ${p.ready ? 'on' : ''}">${p.ready ? '✓ Ready' : 'wacht…'}</span>
         ${host && p.id !== S.you ? `<button class="sec sm" data-kick="${p.id}" title="Verwijder uit kamer">✕ Verwijder</button>` : ''}</div>`).join('')}</div>
     </div>
     <div class="panel">
-      ${host ? `<div class="row-flex">
-        <label class="muted">Spel eindigt bij&nbsp;
-          <select id="target">${[30, 45, 66, 100].map((v) => `<option ${v === S.targetScore ? 'selected' : ''}>${v}</option>`).join('')}</select> koeienkoppen</label>
-        <button id="start" class="lg" style="margin-left:auto">Start spel ▶</button></div>`
-        : `<p class="muted" style="margin:0">⏳ Wachten tot de host het spel start… (eindscore ${S.targetScore})</p>`}
+      <div class="row-flex">
+        <button id="ready" class="lg ${me.ready ? 'on' : ''}">${me.ready ? '✓ Je bent ready' : 'Ik ben ready'}</button>
+        <span class="muted">${readyCount}/${S.players.length} ready</span>
+        ${host ? `<label class="muted" style="margin-left:auto">Eindscore&nbsp;
+          <select id="target">${[30, 45, 66, 100].map((v) => `<option ${v === S.targetScore ? 'selected' : ''}>${v}</option>`).join('')}</select></label>` : ''}
+      </div>
+      ${host
+        ? `<div class="row-flex" style="margin-top:12px"><button id="start" class="lg" ${allReady && S.players.length >= 2 ? '' : 'disabled'}>Start spel ▶</button>
+           <span class="muted">${S.players.length < 2 ? 'Minimaal 2 spelers (voeg een bot toe)' : allReady ? 'Iedereen is ready!' : `Wachten op: ${esc(waiting.map((p) => p.name).join(', '))}`}</span></div>`
+        : `<p class="muted" style="margin:12px 0 0">${allReady ? '⏳ Wachten tot de host het spel start…' : `Wachten op: ${esc(waiting.map((p) => p.name).join(', '))}`} (eindscore ${S.targetScore})</p>`}
     </div>
     <p style="text-align:center"><button class="sec sm" id="leave">Verlaat kamer</button></p>`;
   document.getElementById('copy').onclick = () => {
@@ -492,6 +513,7 @@ function renderLobby() {
     (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(() => toast('Link gekopieerd'), () => prompt('Kopieer link', url));
   };
   document.getElementById('leave').onclick = () => send({ t: 'leave' });
+  document.getElementById('ready').onclick = () => { sfx.tick(); buzz(10); send({ t: 'ready', v: !me.ready }); };
   if (host) {
     document.getElementById('bot').onclick = () => send({ t: 'addBot' });
     document.getElementById('start').onclick = () => send({ t: 'start' });
@@ -705,15 +727,16 @@ function renderGame() {
         const ghost = target.cloneNode(true);
         ghost.classList.remove('fly');
         if (ev.taken) {
-          // de zware variant: valt van hoog, klap, dan pas gaat de rij naar de speler
-          const lvl = lvlOf(ev.points);
-          const dur = 620 + lvl * 70;
+          // valt van hoog, klap, dan pas gaat de rij naar de speler; alles schaalt met de punten
+          const L = lvlOf(ev.points);
+          const k = strength(L);
+          const dur = 560 + 45 * k;
           fly(ghost, from, target, {
-            sel, dur, slam: lvl, z: 32, lift: -(30 + lvl * 24), rot: -6 - lvl * 3,
-            onland: (el) => impact(lvl, (el || target).getBoundingClientRect(), name(ev.playerId)),
+            sel, dur, slam: k, z: 32, lift: -(30 + k * 24), rot: -6 - k * 3,
+            onland: (el) => impact(L, (el || target).getBoundingClientRect(), name(ev.playerId)),
           });
           sfx.whoosh();
-          takeRow(ev, takenRects, dur + 40, lvl);
+          takeRow(ev, takenRects, dur + 40, L);
         } else {
           fly(ghost, from, target, { sel, onland: () => { sfx.land(); buzz(12); } });
           sfx.whoosh();
@@ -792,5 +815,5 @@ if (session) {
   send({ t: 'resume' });
 } else {
   render();
-  if (urlCode) setTimeout(() => { const c = document.getElementById('code'); if (c) c.value = urlCode.toUpperCase(); }, 0);
+  if (urlCode) { pendingCode = urlCode.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4); const c = document.getElementById('code'); if (c) c.value = pendingCode; }
 }

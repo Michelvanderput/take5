@@ -30,7 +30,7 @@ async function handle(store, body, now = Date.now()) {
     if (!/^[A-Z]{4}$/.test(code)) throw new Error('Kamer niet gevonden');
 
     for (let attempt = 0; attempt < 6; attempt++) {
-      const { state: s, seen } = await store.poll(code, body.t === 'join' || typeof body.id !== 'string' ? null : body.id.slice(0, 40), now);
+      const { state: s, seen } = await store.poll(code, body.t === 'join' || typeof body.pid !== 'string' ? null : body.pid.slice(0, 40), now);
       if (!s) throw new Error('Kamer niet gevonden');
       if (s.game) s.game = hydrate(s.game);
       const before = JSON.stringify(s);

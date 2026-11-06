@@ -11,7 +11,7 @@ const T = {
 };
 const PRESENCE_MS = 12000;
 // Na het nemen van een rij heeft de animatie meer tijd nodig: hoe meer punten, hoe dramatischer.
-const takeMs = (pts) => Math.round(T.STEP * 1.9 + Math.min(pts, 25) * T.STEP * 0.02);
+const takeMs = (pts) => Math.round(T.STEP * (pts < 5 ? 1.5 : 1.7 + (Math.min(pts, 10) - 5) * 0.09));
 const BOT_NAMES = ['Koe Klaas', 'Bella', 'Dolly', 'Muu-ke', 'Gerda', 'Stier Piet', 'Lotte', 'Daisy', 'Henk'];
 
 const hydrate = (d) => Object.assign(Object.create(Game.prototype), d, { rng: Math.random });
@@ -107,7 +107,7 @@ function view(s, forId, ctx) {
   const players = s.members.map((m) => {
     const gp = g && g.player(m.id);
     return {
-      id: m.id, name: m.name, bot: m.bot, connected: !!connected(s, m, ctx),
+      id: m.id, name: m.name, bot: m.bot, connected: !!connected(s, m, ctx), ready: !!(m.bot || m.ready),
       score: gp ? gp.score : 0,
       roundPoints: gp ? sumPoints(gp.pile) : 0,
       handCount: gp ? gp.hand.length : 0,
@@ -160,15 +160,22 @@ function apply(s, me, body, ctx) {
       if (s.phase !== 'lobby') throw new Error('Spel is al gestart');
       s.targetScore = [30, 45, 66, 100].includes(body.v) ? body.v : 66;
       return;
-    case 'start':
+    case 'ready':
+      if (s.phase !== 'lobby') throw new Error('Spel is al gestart');
+      me.ready = body.v === undefined ? !me.ready : !!body.v;
+      return;
+    case 'start': {
       host();
       if (s.phase !== 'lobby') throw new Error('Al gestart');
       if (s.members.length < 2) throw new Error('Minimaal 2 spelers (voeg desnoods een bot toe)');
+      const wacht = s.members.filter((m) => !m.bot && !m.ready).map((m) => m.name);
+      if (wacht.length) throw new Error(`Wachten op ${wacht.join(', ')}`);
       s.phase = 'game';
       s.game = new Game(s.members.map((m) => ({ id: m.id })), { targetScore: s.targetScore });
       s.game.startRound();
       schedule(s, ctx.now, T.TURN, 'force');
       return;
+    }
     case 'play':
       if (!g) throw new Error('Spel is niet gestart');
       g.submit(me.id, body.card);
@@ -183,6 +190,7 @@ function apply(s, me, body, ctx) {
       s.game = null;
       s.phase = 'lobby';
       s.nextAt = s.nextAction = null;
+      s.members.forEach((m) => { m.ready = false; });
       return;
     case 'rematch':
       host();
@@ -190,6 +198,7 @@ function apply(s, me, body, ctx) {
       s.game = null;
       s.phase = 'lobby';
       s.nextAt = s.nextAction = null;
+      s.members.forEach((m) => { m.ready = false; });
       return;
     case 'leave': {
       if (s.phase === 'lobby') s.members = s.members.filter((x) => x !== me);
