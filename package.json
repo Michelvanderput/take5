@@ -1,0 +1,14 @@
+{
+  "name": "take5-online",
+  "version": "1.0.0",
+  "description": "Online multiplayer Take 5! (6 nimmt!) met WebSockets",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "license": "MIT"
+}
