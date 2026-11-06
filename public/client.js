@@ -344,7 +344,7 @@ function renderLobby() {
       <div class="plist">${S.players.map((p) => `<div class="pitem">${avatar(p.name)}
         <span class="nm">${esc(p.name)}</span>
         ${p.id === S.hostId ? '<span class="tag">👑 host</span>' : ''}${p.bot ? '<span class="tag">bot</span>' : ''}${p.id === S.you ? '<span class="tag">jij</span>' : ''}
-        ${host && p.id !== S.you ? `<button class="sec sm" data-kick="${p.id}" title="Verwijder">✕</button>` : ''}</div>`).join('')}</div>
+        ${host && p.id !== S.you ? `<button class="sec sm" data-kick="${p.id}" title="Verwijder uit kamer">✕ Verwijder</button>` : ''}</div>`).join('')}</div>
     </div>
     <div class="panel">
       ${host ? `<div class="row-flex">
