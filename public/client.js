@@ -146,7 +146,15 @@ const sfx = (() => {
     flip(delay = 0) { noise(0.07, 0.25, 3500, 1800, delay); tone('triangle', 520, 380, 0.05, 0.05, delay); },
     whoosh(delay = 0) { noise(0.32, 0.3, 500, 3200, delay); },
     land(delay = 0) { tone('sine', 150, 55, 0.16, 0.28, delay); noise(0.05, 0.22, 2500, 900, delay); },
-    moo() { tone('sawtooth', 210, 140, 0.55, 0.07, 0, 8); tone('sine', 105, 70, 0.55, 0.12); },
+    moo(l = 2) { const d = 0.5 + l * 0.14; tone('sawtooth', 230 - l * 14, 120 - l * 8, d, 0.05 + l * 0.012, 0, 8 + l * 2); tone('sine', 110 - l * 6, 60, d, 0.1 + l * 0.015); },
+    // zware klap: hoe hoger het niveau, hoe dieper, langer en vuiler
+    slam(l = 2) {
+      tone('sine', 140 - l * 8, 28, 0.22 + l * 0.1, Math.min(0.55, 0.26 + l * 0.07));
+      noise(0.1 + l * 0.05, Math.min(0.6, 0.25 + l * 0.08), 4000, 300);
+      if (l >= 3) { tone('sawtooth', 90, 30, 0.35 + l * 0.05, 0.1 + l * 0.02, 0.02); noise(0.4, 0.22, 1200, 120, 0.05); }
+      if (l >= 5) { tone('square', 60, 25, 0.6, 0.12, 0.08); noise(0.7, 0.25, 800, 80, 0.1); }
+    },
+    score(i = 0) { tone('triangle', 520 + i * 90, 520 + i * 90, 0.14, 0.07, i * 0.09); },
     ding() { tone('sine', 880, 880, 0.18, 0.1); tone('sine', 1320, 1320, 0.3, 0.07, 0.09); },
     alert() { tone('square', 440, 440, 0.1, 0.06); tone('square', 440, 440, 0.1, 0.06, 0.16); },
     win() { [523, 659, 784, 1047, 1319].forEach((f, i) => tone('triangle', f, f, 0.35, 0.1, i * 0.11)); },
@@ -170,14 +178,14 @@ function rehide() {
 
 /** Vlieg `ghost` (een kloon boven de pagina) van rechthoek `from` naar element `toEl`. */
 function fly(ghost, from, toEl, o = {}) {
-  const { dur = 800, delay = 0, sel, lift = -18, rot = -8, onland } = o;
+  const { dur = 800, delay = 0, sel, lift = -18, rot = -8, onland, slam = 0, z = 30 } = o;
   const tr = toEl.getBoundingClientRect();
   const dx = from.left - tr.left;
   const dy = from.top - tr.top;
   const s0 = from.width / tr.width;
   Object.assign(ghost.style, {
     position: 'fixed', left: tr.left + 'px', top: tr.top + 'px', width: tr.width + 'px', height: tr.height + 'px',
-    margin: 0, zIndex: 30, pointerEvents: 'none', willChange: 'transform',
+    margin: 0, zIndex: z, pointerEvents: 'none', willChange: 'transform',
   });
   ghost.style.setProperty('--w', tr.width + 'px');
   document.body.appendChild(ghost);
@@ -189,50 +197,130 @@ function fly(ghost, from, toEl, o = {}) {
     const el = sel ? app.querySelector(sel) : toEl;
     if (el) {
       el.style.visibility = '';
-      el.classList.remove('land'); void el.offsetWidth; el.classList.add('land');
+      el.classList.remove('land', 'slam'); void el.offsetWidth;
+      if (slam) { el.style.setProperty('--lv', slam); el.classList.add('slam'); } else el.classList.add('land');
     }
-    if (onland) onland();
+    if (onland) onland(el);
   };
-  ghost.animate([
-    { transform: `translate(${dx}px, ${dy}px) scale(${s0}) rotate(${rot}deg)`, boxShadow: '0 4px 10px rgba(0,0,0,.4)' },
-    { transform: `translate(${dx * 0.22}px, ${dy * 0.22 + lift}px) scale(1.2) rotate(3deg)`, boxShadow: '0 30px 40px -8px rgba(0,0,0,.7)', offset: 0.72 },
-    { transform: 'none', boxShadow: '0 6px 16px -6px rgba(0,0,0,.55)' },
-  ], { duration: dur, delay, easing: 'cubic-bezier(.22,.9,.3,1)', fill: 'both' }).finished.then(end, end);
+  const frames = slam
+    ? [ // omhoog en dan met volle snelheid naar beneden
+      { transform: `translate(${dx}px, ${dy}px) scale(${s0}) rotate(${rot}deg)`, boxShadow: '0 4px 10px rgba(0,0,0,.4)', easing: 'cubic-bezier(.2,.7,.3,1)' },
+      { transform: `translate(${dx * 0.2}px, ${dy * 0.2 + lift}px) scale(${1.25 + slam * 0.1}) rotate(${2 + slam}deg)`, boxShadow: '0 40px 50px -8px rgba(0,0,0,.75)', offset: 0.55, easing: 'cubic-bezier(.7,0,1,.6)' },
+      { transform: 'none', boxShadow: '0 6px 16px -6px rgba(0,0,0,.55)' },
+    ]
+    : [
+      { transform: `translate(${dx}px, ${dy}px) scale(${s0}) rotate(${rot}deg)`, boxShadow: '0 4px 10px rgba(0,0,0,.4)' },
+      { transform: `translate(${dx * 0.22}px, ${dy * 0.22 + lift}px) scale(1.2) rotate(3deg)`, boxShadow: '0 30px 40px -8px rgba(0,0,0,.7)', offset: 0.72 },
+      { transform: 'none', boxShadow: '0 6px 16px -6px rgba(0,0,0,.55)' },
+    ];
+  ghost.animate(frames, { duration: dur, delay, easing: slam ? 'linear' : 'cubic-bezier(.22,.9,.3,1)', fill: 'both' }).finished.then(end, end);
 }
 
 const elFrom = (html) => { const t = document.createElement('div'); t.innerHTML = html.trim(); return t.firstElementChild; };
 
-/** Een gepakte rij vliegt naar de speler; +punten zweeft omhoog. */
-function takeRow(ev, rects) {
+const lvlOf = (pts) => (pts >= 20 ? 5 : pts >= 15 ? 4 : pts >= 10 ? 3 : pts >= 5 ? 2 : 1);
+const SHOUT = ['', '', 'Pech!', 'Auw!', 'AUTSCH!!', 'KOEIENDRAMA!!!'];
+const COLORS = ['#ef4444', '#f97316', '#fbbf24', '#ffffff', '#a855f7'];
+
+/** De klap: hoe hoger het niveau, hoe heftiger (schudden, flits, schokgolf, scherven, bas, trillen). */
+function impact(lvl, rect) {
+  sfx.slam(lvl);
+  buzz([[20], [40, 30, 50], [60, 40, 90], [80, 40, 110, 40, 140], [120, 50, 160, 50, 220]][lvl - 1]);
+  if (reduced()) return;
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  // schermschudden
+  const amp = 2 + lvl * 3.2;
+  const steps = 8 + lvl * 3;
+  const kf = Array.from({ length: steps }, (_, i) => {
+    const k = 1 - i / steps;
+    return { transform: `translate(${(Math.random() - 0.5) * 2 * amp * k}px, ${(Math.random() - 0.5) * 2 * amp * k}px) rotate(${(Math.random() - 0.5) * lvl * 0.3 * k}deg)` };
+  }).concat({ transform: 'none' });
+  // schud alles behalve de vaste kaartenbalk (een transform op #app zou die laten verspringen)
+  [...app.children].filter((e) => !e.classList.contains('dock') && !e.classList.contains('rscore'))
+    .forEach((e) => e.animate(kf, { duration: 280 + lvl * 130, easing: 'linear' }));
+  // rode flits
+  const fl = document.createElement('div');
+  fl.className = 'flash';
+  fl.style.setProperty('--o', Math.min(0.55, 0.08 + lvl * 0.09));
+  fl.style.setProperty('--x', cx + 'px'); fl.style.setProperty('--y', cy + 'px');
+  fl.style.animationDuration = 500 + lvl * 140 + 'ms';
+  document.body.appendChild(fl);
+  fl.addEventListener('animationend', () => fl.remove());
+  // schokgolven
+  for (let i = 0; i < Math.min(3, 1 + Math.floor(lvl / 2)); i++) {
+    const r = document.createElement('div');
+    r.className = 'shock';
+    Object.assign(r.style, { left: cx + 'px', top: cy + 'px', animationDelay: i * 110 + 'ms', animationDuration: 650 + lvl * 90 + 'ms' });
+    r.style.setProperty('--s', 5 + lvl * 2.2);
+    document.body.appendChild(r);
+    r.addEventListener('animationend', () => r.remove());
+  }
+  // scherven / vonken
+  const n = lvl * 9 + 4;
+  for (let i = 0; i < n; i++) {
+    const p = document.createElement('div');
+    p.className = 'spark';
+    const ang = Math.random() * Math.PI * 2;
+    const dist = 50 + Math.random() * (60 + lvl * 55);
+    const sz = 4 + Math.random() * (3 + lvl * 1.5);
+    Object.assign(p.style, { left: cx + 'px', top: cy + 'px', width: sz + 'px', height: sz * (Math.random() > 0.5 ? 1 : 2.2) + 'px', background: COLORS[(Math.random() * COLORS.length) | 0] });
+    document.body.appendChild(p);
+    const dx = Math.cos(ang) * dist;
+    const dy = Math.sin(ang) * dist;
+    p.animate([
+      { transform: 'translate(-50%,-50%) rotate(0)', opacity: 1 },
+      { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy - 20}px)) rotate(${Math.random() * 540}deg)`, opacity: 1, offset: 0.55 },
+      { transform: `translate(calc(-50% + ${dx * 1.1}px), calc(-50% + ${dy + 70 + lvl * 15}px)) rotate(${Math.random() * 900}deg)`, opacity: 0 },
+    ], { duration: 600 + Math.random() * (400 + lvl * 120), easing: 'cubic-bezier(.2,.7,.4,1)', fill: 'forwards' }).finished.then(() => p.remove(), () => p.remove());
+  }
+  // schreeuw
+  if (lvl >= 2) {
+    const t = document.createElement('div');
+    t.className = 'shout';
+    t.textContent = SHOUT[lvl];
+    t.style.setProperty('--fs', 1.6 + lvl * 0.9 + 'rem');
+    t.style.setProperty('--tilt', (Math.random() > 0.5 ? 1 : -1) * (2 + lvl) + 'deg');
+    document.body.appendChild(t);
+    t.addEventListener('animationend', () => t.remove());
+  }
+}
+
+/** Na de klap: de gepakte rij vliegt naar de speler; +punten zweeft omhoog. `delay`: wacht op de klap. */
+function takeRow(ev, rects, delay = 0, lvl = lvlOf(ev.points)) {
   const chip = app.querySelector(`.pl[data-pid="${ev.playerId}"] .avatar`);
   if (!chip) return;
   const cr = chip.getBoundingClientRect();
   const cx = cr.left + cr.width / 2;
   const cy = cr.top + cr.height / 2;
+  const dur = 650 + lvl * 90;
   (rects || []).forEach((r, i) => {
     const g = elFrom(cardHtml(ev.taken[i] ?? ev.taken[0]));
     g.style.setProperty('--w', r.width + 'px');
     Object.assign(g.style, { position: 'fixed', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px', margin: 0, zIndex: 31, pointerEvents: 'none' });
     document.body.appendChild(g);
-    const rotz = (Math.random() - 0.5) * 60;
+    const rotz = (Math.random() - 0.5) * (40 + lvl * 30);
     g.animate([
       { transform: 'none', opacity: 1 },
-      { transform: `translate(0, -14px) scale(1.08) rotate(${rotz / 3}deg)`, opacity: 1, offset: 0.2 },
+      { transform: `translate(${(Math.random() - 0.5) * lvl * 12}px, ${-10 - lvl * 5}px) scale(${1.05 + lvl * 0.03}) rotate(${rotz / 3}deg)`, opacity: 1, offset: 0.22 },
       { transform: `translate(${cx - r.left - r.width / 2}px, ${cy - r.top - r.height / 2}px) scale(.18) rotate(${rotz}deg)`, opacity: 0.1 },
-    ], { duration: 750, delay: i * 70, easing: 'cubic-bezier(.5,0,.8,.4)', fill: 'both' }).finished.then(() => g.remove(), () => g.remove());
+    ], { duration: dur, delay: delay + i * (60 + lvl * 8), easing: 'cubic-bezier(.5,0,.8,.4)', fill: 'both' }).finished.then(() => g.remove(), () => g.remove());
   });
-  const total = 750 + (rects ? rects.length * 70 : 0) - 80;
+  const total = delay + dur + (rects ? rects.length * (60 + lvl * 8) : 0) - 100;
   setTimeout(() => {
-    chip.parentElement.classList.remove('hit'); void chip.offsetWidth; chip.parentElement.classList.add('hit');
+    chip.parentElement.classList.remove('hit'); void chip.offsetWidth;
+    chip.parentElement.style.setProperty('--amp', 5 + lvl * 3 + 'px');
+    chip.parentElement.classList.add('hit');
     const f = document.createElement('div');
     f.className = 'floatpts';
+    f.style.fontSize = 1.9 + lvl * 0.5 + 'rem';
     f.innerHTML = `+${ev.points} ${cowSvg()}`;
     f.style.left = cx + 'px'; f.style.top = cy + 'px';
     document.body.appendChild(f);
     f.addEventListener('animationend', () => f.remove());
-    sfx.moo();
+    sfx.moo(lvl);
     buzz([40, 50, 90]);
-  }, Math.max(0, total * 0.7));
+  }, Math.max(0, total * 0.75));
 }
 
 function tweenScores() {
@@ -501,6 +589,32 @@ function renderGame() {
       ${S.hostId === S.you ? '<button id="rematch" class="lg">Nog een keer ↺</button>' : '<p class="muted">Wachten op de host…</p>'}</div>`;
   }
 
+  // tussenstand tijdens de pauze tussen twee rondes
+  const freshRoundEnd = g === 'roundEnd' && prev.phase !== 'roundEnd' && !first;
+  let board = '';
+  if (g === 'roundEnd') {
+    const worst = Math.max(...S.players.map((p) => p.roundPoints));
+    const ranked = S.players.slice().sort((a, b) => a.score - b.score);
+    const left = Math.max(0, Math.ceil((S.deadline - serverNow()) / 1000));
+    board = `<div class="rscore"><div class="rs-card">
+      <div class="rs-head"><h3>Tussenstand</h3><span class="pill">na ronde ${S.round}</span></div>
+      <div class="rs-list">${ranked.map((p, i) => {
+        const before = p.score - p.roundPoints;
+        const pct = (v) => Math.min(100, Math.round((v / S.targetScore) * 100));
+        const tag = p.roundPoints === 0 ? '<span class="rs-tag good">schoon! 🎉</span>'
+          : p.roundPoints === worst && worst > 0 ? '<span class="rs-tag bad">meeste koeien</span>' : '';
+        return `<div class="rs-row ${i === 0 ? 'lead' : ''} ${p.id === S.you ? 'me' : ''}" style="--i:${i}">
+          <span class="rk">${i === 0 ? '👑' : i + 1}</span>${avatar(p.name)}
+          <span class="nm">${esc(p.name)}${tag}</span>
+          <span class="add ${p.roundPoints ? '' : 'zero'}">+${p.roundPoints}</span>
+          <b class="tot" data-from="${freshRoundEnd ? before : p.score}" data-to="${p.score}">${freshRoundEnd ? before : p.score}</b>
+          <span class="bar"><i class="${pct(p.score) >= 75 ? 'hi' : ''}" data-w="${pct(p.score)}" style="width:${freshRoundEnd ? pct(before) : pct(p.score)}%"></i></span>
+        </div>`;
+      }).join('')}</div>
+      <div class="rs-foot">Volgende ronde start over <b id="rcount">${left}</b>s</div>
+    </div></div>`;
+  }
+
   const secs = S.deadline && (g === 'choosing' || needMyRow) ? Math.max(0, Math.round((S.deadline - serverNow()) / 1000)) : null;
 
   app.innerHTML = `
@@ -516,6 +630,7 @@ function renderGame() {
     <div class="stage"><div class="board">${rowsHtml}</div>
     ${tray || '<div class="tray"></div>'}</div>
     ${over}
+    ${board}
     ${S.hand.length ? `<div class="dock"><div class="inner">
       <button id="play" class="lg" ${selected && canPlay ? '' : 'disabled'} ${canPlay ? '' : 'style="visibility:hidden" tabindex="-1"'}>${selected ? `Speel ${selected}` : 'Kies een kaart'}</button>
       ${handHtml}</div></div>` : ''}`;
@@ -574,10 +689,41 @@ function renderGame() {
         const from = src ? src.getBoundingClientRect() : { left: innerWidth / 2 - tr.width / 2, top: innerHeight + 30, width: tr.width };
         const ghost = target.cloneNode(true);
         ghost.classList.remove('fly');
-        fly(ghost, from, target, { sel, delay: ev.taken ? 300 : 0, onland: () => { sfx.land(); buzz(12); } });
-        sfx.whoosh(ev.taken ? 0.3 : 0);
+        if (ev.taken) {
+          // de zware variant: valt van hoog, klap, dan pas gaat de rij naar de speler
+          const lvl = lvlOf(ev.points);
+          const dur = 620 + lvl * 70;
+          fly(ghost, from, target, {
+            sel, dur, slam: lvl, z: 32, lift: -(30 + lvl * 24), rot: -6 - lvl * 3,
+            onland: (el) => impact(lvl, (el || target).getBoundingClientRect()),
+          });
+          sfx.whoosh();
+          takeRow(ev, takenRects, dur + 40, lvl);
+        } else {
+          fly(ghost, from, target, { sel, onland: () => { sfx.land(); buzz(12); } });
+          sfx.whoosh();
+        }
       }
-      if (ev.taken) takeRow(ev, takenRects);
+    }
+    if (freshRoundEnd) {
+      sfx.ding();
+      app.querySelectorAll('.rs-row').forEach((row, i) => {
+        const to = +row.querySelector('.tot').dataset.to;
+        const el = row.querySelector('.tot');
+        const from = +el.dataset.from;
+        const bar = row.querySelector('.bar i');
+        setTimeout(() => {
+          bar.style.width = bar.dataset.w + '%';
+          const t0 = performance.now();
+          const step = (t) => {
+            const k = Math.min(1, (t - t0) / 1100);
+            el.textContent = Math.round(from + (to - from) * (1 - Math.pow(1 - k, 3)));
+            if (k < 1 && el.isConnected) requestAnimationFrame(step);
+          };
+          requestAnimationFrame(step);
+          if (to !== from) sfx.score(i);
+        }, 500 + i * 120);
+      });
     }
     if (needMyRow && !prev.myRow) { sfx.alert(); buzz([60, 60, 60]); }
     if (g === 'gameOver' && !prev.over) { sfx.win(); confetti(); buzz([40, 40, 40, 40, 120]); }
@@ -612,7 +758,9 @@ setInterval(() => {
     el.textContent = `⏱ ${s}s`;
     el.classList.toggle('hot', s <= 10);
   }
-}, 1000);
+  const rc = document.getElementById('rcount');
+  if (S && S.deadline && rc) rc.textContent = Math.max(0, Math.ceil((S.deadline - serverNow()) / 1000));
+}, 500);
 
 // mute-knop
 const muteBtn = document.createElement('button');

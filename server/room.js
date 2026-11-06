@@ -10,6 +10,8 @@ const T = {
   BREAK: 9000, // pauze tussen rondes
 };
 const PRESENCE_MS = 12000;
+// Na het nemen van een rij heeft de animatie meer tijd nodig: hoe meer punten, hoe dramatischer.
+const takeMs = (pts) => Math.round(T.STEP * 1.9 + Math.min(pts, 25) * T.STEP * 0.02);
 const BOT_NAMES = ['Koe Klaas', 'Bella', 'Dolly', 'Muu-ke', 'Gerda', 'Stier Piet', 'Lotte', 'Daisy', 'Henk'];
 
 const hydrate = (d) => Object.assign(Object.create(Game.prototype), d, { rng: Math.random });
@@ -62,8 +64,8 @@ function runAction(s, ctx) {
       return;
     case 'autoRow':
       if (g.phase === 'chooseRow') {
-        g.chooseRow(g.waitingFor, g.cheapestRow());
-        schedule(s, now, T.STEP, 'step');
+        const tev = g.chooseRow(g.waitingFor, g.cheapestRow());
+        schedule(s, now, takeMs(tev.points), 'step');
         return;
       }
       break;
@@ -78,6 +80,7 @@ function runAction(s, ctx) {
       else if (ev.type === 'turnEnd') schedule(s, now, T.TURN, 'force');
       else if (ev.type === 'roundEnd') schedule(s, now, T.BREAK, 'nextRound');
       else if (ev.type === 'gameOver') s.nextAt = s.nextAction = null;
+      else if (ev.type === 'sixth') schedule(s, now, takeMs(ev.points), 'step');
       else schedule(s, now, T.STEP, 'step');
       return;
     }
@@ -172,8 +175,7 @@ function apply(s, me, body, ctx) {
       return;
     case 'pickRow':
       if (!g) throw new Error('Spel is niet gestart');
-      g.chooseRow(me.id, body.row);
-      schedule(s, ctx.now, T.STEP, 'step');
+      schedule(s, ctx.now, takeMs(g.chooseRow(me.id, body.row).points), 'step');
       return;
     case 'stop':
       host();
