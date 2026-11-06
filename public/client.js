@@ -71,9 +71,17 @@ setInterval(() => {
 }, 800);
 
 // ---------- rendering ----------
+const cowSvg = (n = 1) => '<svg class="cow"><use href="#cow"/></svg>'.repeat(n);
+const hue = (s) => [...String(s)].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) % 360, 7);
+const avatar = (name) => `<span class="avatar" style="--h:${hue(name)}">${esc([...name][0] || '?').toUpperCase()}</span>`;
+
 function cardHtml(n, cls = '') {
   const p = points(n);
-  return `<div class="card p${p} ${cls}" data-card="${n}"><span class="n">${n}</span><span class="cows">${'🐮'.repeat(p)}</span></div>`;
+  return `<div class="card p${p} ${cls}" data-card="${n}"><span class="num">${n}</span><span class="cows">${cowSvg(p)}</span></div>`;
+}
+
+function setMain(cls) {
+  app.className = cls;
 }
 
 function render() {
@@ -83,21 +91,26 @@ function render() {
 }
 
 function renderHome() {
+  setMain('home');
   app.innerHTML = `
-    <h1>🐮 Take 5!</h1>
-    <div class="panel">
-      <p>Speel online met vrienden. Iedereen opent deze pagina op zijn eigen apparaat.</p>
-      <div class="row-flex"><input id="name" placeholder="Jouw naam" maxlength="16" value="${esc(pendingName)}"></div>
-    </div>
-    <div class="panel">
-      <h3>Nieuw spel</h3>
-      <button id="create">Maak kamer</button>
-    </div>
-    <div class="panel">
-      <h3>Meedoen</h3>
-      <div class="row-flex">
-        <input id="code" placeholder="Kamercode" maxlength="4" style="text-transform:uppercase;width:130px">
-        <button id="join">Deelnemen</button>
+    <section class="hero">
+      <h1><span class="grad-text">Take 5!</span></h1>
+      <p>Het razendsnelle kaartspel waarin je niet de 6e kaart wilt leggen. Speel online met 2 tot 10 vrienden, ieder op het eigen scherm.</p>
+    </section>
+    <div class="namebox"><input id="name" placeholder="Jouw naam" maxlength="16" value="${esc(pendingName)}" autocomplete="nickname"></div>
+    <div class="grid2">
+      <div class="panel">
+        <h3>Nieuw spel</h3>
+        <p class="muted">Maak een kamer en deel de code met je vrienden.</p>
+        <button id="create" class="lg">Kamer maken</button>
+      </div>
+      <div class="panel">
+        <h3>Meedoen</h3>
+        <p class="muted">Heb je een code gekregen? Vul hem hier in.</p>
+        <div class="field">
+          <input id="code" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;letter-spacing:.25em;text-align:center;font-weight:700">
+          <button id="join" class="lg">Deelnemen</button>
+        </div>
       </div>
     </div>`;
   const name = () => {
@@ -108,42 +121,52 @@ function renderHome() {
   document.getElementById('create').onclick = () => send({ t: 'create', name: name() });
   document.getElementById('join').onclick = () =>
     send({ t: 'join', name: name(), code: document.getElementById('code').value });
+  document.getElementById('code').onkeydown = (e) => e.key === 'Enter' && document.getElementById('join').click();
 }
 
 function playersHtml(waiting) {
   return `<div class="players">${S.players.map((p) => {
-    const cls = ['pl', p.id === S.you ? 'me' : '', p.connected ? '' : 'off', waiting && !p.hasChosen ? 'wait' : ''].join(' ');
-    const status = waiting ? (p.hasChosen ? '✅' : '🤔') : '';
-    return `<div class="${cls}"><div class="nm">${p.bot ? '🤖 ' : ''}${esc(p.name)} ${status}${p.id === S.hostId ? ' 👑' : ''}</div>
-      <div class="sc">Totaal ${p.score} · ronde ${p.roundPoints}🐮</div></div>`;
+    const dot = !p.connected ? '' : waiting ? `<i class="dot ${p.hasChosen ? 'ok' : 'think'}"></i>` : '';
+    const pct = Math.min(100, Math.round(((p.score + 0) / S.targetScore) * 100));
+    return `<div class="pl ${p.id === S.you ? 'me' : ''} ${p.connected ? '' : 'off'}">
+      <span class="avatar" style="--h:${hue(p.name)}">${esc([...p.name][0] || '?').toUpperCase()}${dot}</span>
+      <span class="nm">${p.bot ? '🤖 ' : ''}${esc(p.name)}${p.id === S.hostId ? ' 👑' : ''}</span>
+      <span class="sc"><b>${p.score}</b>${p.roundPoints ? ` <span style="color:var(--t5)">+${p.roundPoints}</span>` : ''} ${cowSvg()}</span>
+      <span class="bar"><i class="${pct >= 75 ? 'hi' : ''}" style="width:${pct}%"></i></span></div>`;
   }).join('')}</div>`;
 }
 
 function renderLobby() {
+  setMain('lobby');
   const host = S.hostId === S.you;
   app.innerHTML = `
-    <h1>🐮 Take 5!</h1>
-    <div class="panel">
-      <div class="muted">Kamercode — deel deze met je vrienden</div>
+    <section class="hero" style="padding-bottom:6px"><h1><span class="grad-text">Take 5!</span></h1></section>
+    <div class="panel codebox">
+      <div class="muted">Deel deze code met je vrienden</div>
       <div class="code">${S.code}</div>
-      <button class="sec" id="copy">Kopieer uitnodigingslink</button>
+      <button class="sec" id="copy">🔗 Kopieer uitnodigingslink</button>
     </div>
     <div class="panel">
-      <h3>Spelers (${S.players.length}/10)</h3>
-      <table>${S.players.map((p) => `<tr><td>${p.bot ? '🤖 ' : ''}${esc(p.name)}${p.id === S.hostId ? ' 👑' : ''}${p.id === S.you ? ' (jij)' : ''}</td>
-        <td>${host && p.id !== S.you ? `<button class="sec" data-kick="${p.id}">Verwijder</button>` : ''}</td></tr>`).join('')}</table>
-      ${host ? `<div class="row-flex" style="margin-top:12px">
-        <button class="sec" id="bot">+ Bot</button>
-        <label>Eindscore: <select id="target">${[30, 45, 66, 100].map((v) => `<option ${v === S.targetScore ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
-        <button id="start">Start spel</button></div>`
-        : `<p class="muted">Wachten tot de host het spel start… (eindscore ${S.targetScore})</p>`}
+      <div class="row-flex"><h3>Spelers</h3><span class="tag">${S.players.length}/10</span>
+        ${host ? '<button class="sec sm" id="bot" style="margin-left:auto">🤖 Bot toevoegen</button>' : ''}</div>
+      <div class="plist">${S.players.map((p) => `<div class="pitem">${avatar(p.name)}
+        <span class="nm">${esc(p.name)}</span>
+        ${p.id === S.hostId ? '<span class="tag">👑 host</span>' : ''}${p.bot ? '<span class="tag">bot</span>' : ''}${p.id === S.you ? '<span class="tag">jij</span>' : ''}
+        ${host && p.id !== S.you ? `<button class="sec sm" data-kick="${p.id}" title="Verwijder">✕</button>` : ''}</div>`).join('')}</div>
     </div>
-    <button class="sec" id="leave">Verlaat kamer</button>`;
+    <div class="panel">
+      ${host ? `<div class="row-flex">
+        <label class="muted">Spel eindigt bij&nbsp;
+          <select id="target">${[30, 45, 66, 100].map((v) => `<option ${v === S.targetScore ? 'selected' : ''}>${v}</option>`).join('')}</select> koeienkoppen</label>
+        <button id="start" class="lg" style="margin-left:auto">Start spel ▶</button></div>`
+        : `<p class="muted" style="margin:0">⏳ Wachten tot de host het spel start… (eindscore ${S.targetScore})</p>`}
+    </div>
+    <p style="text-align:center"><button class="sec sm" id="leave">Verlaat kamer</button></p>`;
   document.getElementById('copy').onclick = () => {
     const url = `${location.origin}/?code=${S.code}`;
     (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(() => toast('Link gekopieerd'), () => prompt('Kopieer link', url));
   };
-  document.getElementById('leave').onclick = () => { send({ t: 'leave' }); clearSession(); };
+  document.getElementById('leave').onclick = () => send({ t: 'leave' });
   if (host) {
     document.getElementById('bot').onclick = () => send({ t: 'addBot' });
     document.getElementById('start').onclick = () => send({ t: 'start' });
@@ -153,6 +176,7 @@ function renderLobby() {
 }
 
 function renderGame() {
+  setMain('game');
   const g = S.gamePhase;
   const name = (id) => (S.players.find((p) => p.id === id) || {}).name || '?';
   const ev = S.lastEvent;
@@ -161,31 +185,34 @@ function renderGame() {
   const needMyRow = g === 'chooseRow' && S.waitingFor === S.you;
 
   let status = '';
+  let alert = false;
   if (g === 'choosing') status = S.myChoice ? 'Kaart gekozen — wachten op de anderen…' : 'Kies een kaart uit je hand';
   else if (g === 'resolving') status = 'Kaarten worden neergelegd…';
-  else if (g === 'chooseRow') status = needMyRow ? '⚠ Je kaart is te laag — klik een rij om op te ruimen!' : `${esc(name(S.waitingFor))} moet een rij kiezen…`;
-  else if (g === 'roundEnd') status = 'Ronde afgelopen — volgende ronde start zo…';
+  else if (g === 'chooseRow') {
+    alert = needMyRow;
+    status = needMyRow ? 'Je kaart is te laag — kies een rij om op te ruimen!' : `${esc(name(S.waitingFor))} moet een rij kiezen…`;
+  } else if (g === 'roundEnd') status = 'Ronde afgelopen — de volgende start zo…';
   else if (g === 'gameOver') status = '🏆 Spel afgelopen!';
 
   let evText = '';
   if (ev) {
-    if (ev.type === 'sixth') evText = `${esc(name(ev.playerId))} legt de 6e kaart en neemt ${ev.points} 🐮`;
-    else if (ev.type === 'take') evText = `${esc(name(ev.playerId))} neemt een rij: ${ev.points} 🐮`;
+    if (ev.type === 'sixth') evText = `${esc(name(ev.playerId))} legt de 6e kaart en neemt ${ev.points} ${cowSvg()}`;
+    else if (ev.type === 'take') evText = `${esc(name(ev.playerId))} neemt een rij: ${ev.points} ${cowSvg()}`;
   }
 
   const rowsHtml = S.rows.map((row, i) => {
-    const cls = ['brow', needMyRow ? 'pick' : '', ev && ev.row === i ? 'last' : ''].join(' ');
+    const cls = ['brow', needMyRow ? 'pick' : '', row.length >= 5 ? 'full' : '', ev && ev.row === i ? 'last' : ''].join(' ');
     let cells = '';
     for (let k = 0; k < 5; k++) {
       cells += row[k] !== undefined
         ? cardHtml(row[k], fresh && ev.row === i && row[k] === ev.card ? 'pop' : '')
         : '<div class="card empty"></div>';
     }
-    return `<div class="${cls}" data-row="${i}">${cells}<span class="muted" style="margin-left:auto;align-self:center">${sum(row)}🐮</span></div>`;
+    return `<div class="${cls}" data-row="${i}"><span class="lane">${i + 1}</span>${cells}<span class="tot">${cowSvg()} ${sum(row)}</span></div>`;
   }).join('');
 
   const reveal = S.turnCards.length
-    ? `<div class="reveal">${S.turnCards.map((t) => `<div class="${t.done ? 'done' : ''}">${cardHtml(t.card, 'sm')}<div class="who">${esc(name(t.playerId))}</div></div>`).join('')}</div>`
+    ? `<div class="tray">${S.turnCards.map((t) => `<div class="it ${t.done ? 'done' : ''}">${cardHtml(t.card, 'sm')}<span class="who">${esc(name(t.playerId))}</span></div>`).join('')}</div>`
     : '';
 
   const canPlay = g === 'choosing' && !S.myChoice;
@@ -196,23 +223,28 @@ function renderGame() {
   let over = '';
   if (g === 'gameOver') {
     const rank = S.players.slice().sort((a, b) => a.score - b.score);
-    over = `<div class="panel"><h2>Winnaar: ${S.winners.map((id) => esc(name(id))).join(' & ')} 🏆</h2>
-      <table>${rank.map((p, i) => `<tr><td>${i + 1}.</td><td>${esc(p.name)}</td><td>${p.score} 🐮</td></tr>`).join('')}</table>
-      ${S.hostId === S.you ? '<button id="rematch">Terug naar lobby</button>' : '<p class="muted">Wachten op de host…</p>'}</div>`;
+    over = `<div class="panel" style="margin-top:14px"><h2 class="grad-text" style="font-size:1.8rem">🏆 ${S.winners.map((id) => esc(name(id))).join(' & ')} wint!</h2>
+      <div class="podium">${rank.map((p, i) => `<div class="prow ${S.winners.includes(p.id) ? 'win' : ''}"><span class="rk">${i + 1}</span>${avatar(p.name)}<span class="nm">${esc(p.name)}</span><span class="pts">${p.score} ${cowSvg()}</span></div>`).join('')}</div>
+      ${S.hostId === S.you ? '<button id="rematch" class="lg">Nog een keer ↺</button>' : '<p class="muted">Wachten op de host…</p>'}</div>`;
   }
 
   const secs = S.deadline && (g === 'choosing' || needMyRow) ? Math.max(0, Math.round((S.deadline - Date.now()) / 1000)) : null;
 
   app.innerHTML = `
-    <div class="row-flex"><strong>Ronde ${S.round}</strong><span class="muted">eindigt bij ${S.targetScore} 🐮</span>
-      <span class="muted" style="margin-left:auto">Kamer ${S.code}${secs !== null ? ` · ⏱ ${secs}s` : ''}</span></div>
+    <div class="topbar">
+      <span class="pill"><b>Ronde ${S.round}</b></span>
+      <span class="pill">eindigt bij ${S.targetScore} ${cowSvg()}</span>
+      <span class="pill" style="margin-left:auto">Kamer ${S.code}</span>
+      ${secs !== null ? `<span class="pill timer ${secs <= 10 ? 'hot' : ''}" id="timer">⏱ ${secs}s</span>` : ''}
+    </div>
     ${playersHtml(g === 'choosing')}
-    <div class="status">${status}${evText ? `<div class="muted" style="font-size:.9rem">${evText}</div>` : ''}</div>
+    <div class="status"><span class="main ${alert ? 'alert' : ''}">${status}</span>${evText ? `<span class="sub">${evText}</span>` : ''}</div>
     <div class="board">${rowsHtml}</div>
     ${reveal}
     ${over}
-    ${handHtml}
-    ${canPlay ? `<div class="row-flex" style="justify-content:center"><button id="play" ${selected ? '' : 'disabled'}>Speel ${selected || 'kaart'}</button></div>` : ''}`;
+    ${S.hand.length ? `<div class="dock"><div class="inner">
+      ${canPlay ? `<button id="play" class="lg" ${selected ? '' : 'disabled'}>${selected ? `Speel ${selected}` : 'Kies een kaart'}</button>` : ''}
+      ${handHtml}</div></div>` : ''}`;
 
   if (S.myChoice === null && selected !== null && !S.hand.includes(selected)) selected = null;
   if (canPlay) {
@@ -227,9 +259,11 @@ function renderGame() {
 
 // timer-weergave bijwerken
 setInterval(() => {
-  if (S && S.phase === 'game' && S.deadline && S.gamePhase !== 'resolving') {
-    const el = app.querySelector('.row-flex .muted:last-child');
-    if (el) el.textContent = `Kamer ${S.code} · ⏱ ${Math.max(0, Math.round((S.deadline - Date.now()) / 1000))}s`;
+  const el = document.getElementById('timer');
+  if (S && S.deadline && el) {
+    const s = Math.max(0, Math.round((S.deadline - Date.now()) / 1000));
+    el.textContent = `⏱ ${s}s`;
+    el.classList.toggle('hot', s <= 10);
   }
 }, 1000);
 

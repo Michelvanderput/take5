@@ -2,11 +2,28 @@
 <html lang="nl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1020">
 <title>Take 5 Online</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="cow" viewBox="0 0 24 24">
+    <path d="M5.2 4.2 7.6 8M18.8 4.2 16.4 8" stroke="#f5e6c8" stroke-width="2" stroke-linecap="round" fill="none"/>
+    <ellipse cx="3.6" cy="10" rx="3" ry="1.7" transform="rotate(-25 3.6 10)" fill="currentColor"/>
+    <ellipse cx="20.4" cy="10" rx="3" ry="1.7" transform="rotate(25 20.4 10)" fill="currentColor"/>
+    <path d="M12 21.5c-4.3 0-6.8-3-6.8-7.2C5.2 9.8 7.6 7 12 7s6.8 2.8 6.8 7.3c0 4.2-2.5 7.2-6.8 7.2Z" fill="currentColor"/>
+    <ellipse cx="8.4" cy="11" rx="1.7" ry="2" fill="#fff" fill-opacity=".28"/>
+    <ellipse cx="12" cy="17.6" rx="4.3" ry="3.1" fill="#ffd9d2"/>
+    <circle cx="10.6" cy="17.6" r=".7" fill="#7a3b33"/><circle cx="13.4" cy="17.6" r=".7" fill="#7a3b33"/>
+    <circle cx="9.4" cy="12.6" r="1" fill="#10131f"/><circle cx="14.6" cy="12.6" r="1" fill="#10131f"/>
+  </symbol>
+</svg>
+<div class="bg" aria-hidden="true"><i></i><i></i><i></i></div>
 <div id="toast" hidden></div>
 <main id="app"></main>
 <script src="client.js"></script>
