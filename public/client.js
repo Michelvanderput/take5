@@ -225,12 +225,12 @@ const strength = (L) => (L ? 1.6 + L * 0.7 : 1); // vloeiende sterkte voor alle 
 // Korte, brutale kreten; {n} = naam van de speler die de rij pakt. Van vriendelijk (5 punten) naar hard (10+).
 const SHOUTS = [
   [],
-  ['Boem!', 'Ouch!', 'Jammer man!', 'Lekker voor je!', 'Bro... gaat het?', 'Ik ga stuk!', '6|Je moet juist niet de 6e kaart opgooien he!'],
-  ['Boem!', 'Lekker voor je, {n}!', 'Jammer man!', 'Sukkeltje!', 'Ouch!', 'Bro... gaat het?', 'Ik ga stuk!', 'Snap je het nog wel helemaal?', 'Even allemaal {n} uitlachen!', '6|Je moet juist niet de 6e kaart opgooien he!'],
+  ['Boem!', 'Ouch!', 'Jammer man!', 'Lekker voor je!', 'Bro... gaat het?', 'Ik ga stuk!', 'Ik kom niet meer bij!', '6|Je moet juist niet de 6e kaart opgooien he!'],
+  ['Boem!', 'Lekker voor je, {n}!', 'Jammer man!', 'Sukkeltje!', 'Ouch!', 'Bro... gaat het?', 'Ik ga stuk!', 'Ik kom niet meer bij!', 'Snap je het nog wel helemaal?', 'Even allemaal {n} uitlachen!', '6|Je moet juist niet de 6e kaart opgooien he!'],
   ['Hoe dom ben je!', 'Lekker voor je, {n}!', 'Sukkeltje!', 'Tantoe Sulletje!', 'Jammer man, dombo!', 'Loser!', 'Snap je het nog wel helemaal?', 'Ben je helemaal 100?', 'Vraag Claude even om te helpen!', 'Even allemaal {n} uitlachen!', '6|Je moet juist niet de 6e kaart opgooien he!'],
   ['Wat kan je wel?!', 'Hoe dom ben je, sukkel!', 'Tantoe Sulletje!', 'Boem, dombo!', 'Ouch, kneus!', 'Loser!', 'Hond!', 'Ben je helemaal 100?', 'Vraag Claude even om te helpen!', 'Ongekende {titel}!', 'Snap je het nog wel helemaal?'],
   ['Hoe dom ben je, dombo?!', 'Wat kan je wel, kneus?!', 'Lekker voor je, bitch!', 'Tantoe Sulletje!', 'Boem, bitch!', 'Fucking loser!', 'Loser, bitch!', 'Hond!', 'Ongekende {titel}!', 'Ben je helemaal 100?!', 'Vraag Claude even om te helpen!', 'Even allemaal {n} uitlachen!'],
-  ['Boem, bitch!', 'Hoe dom ben je, dombo?!', 'Wat kan je wel, kneus?!', 'Lekker voor je, bitch!', 'Tantoe Sulletje!', 'Hoppa bitch!', 'Fucking loser!', 'Fucking loser, {n}!', 'Loser, dombo!', 'Hond!', 'Ongekende {titel}!', 'Ben je helemaal 100?!', 'Ik ga stuk!', 'Bro... gaat het?', 'Even allemaal {n} uitlachen!'],
+  ['Boem, bitch!', 'Hoe dom ben je, dombo?!', 'Wat kan je wel, kneus?!', 'Lekker voor je, bitch!', 'Tantoe Sulletje!', 'Hoppa bitch!', 'Fucking loser!', 'Fucking loser, {n}!', 'Loser, dombo!', 'Hond!', 'Ongekende {titel}!', 'Ben je helemaal 100?!', 'Ik ga stuk!', 'Ik kom niet meer bij!', 'Bro... gaat het?', 'Even allemaal {n} uitlachen!'],
 ];
 // Titels voor {titel} (voor iedereen dezelfde, via de gedeelde seed)
 const TITELS = ['sukkel', 'dombo', 'kneus', 'loser', 'hond', 'bitch'];
