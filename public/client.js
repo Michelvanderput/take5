@@ -537,9 +537,9 @@ function renderLobby() {
     <div class="panel">
       <div class="row-flex"><h3>Spelers</h3><span class="tag">${S.players.length}/10</span>
         ${host ? '<button class="sec sm" id="bot" style="margin-left:auto">🤖 Bot toevoegen</button>' : ''}</div>
-      <div class="plist">${S.players.map((p) => `<div class="pitem">${avatar(p.name)}
+      <div class="plist">${S.players.map((p) => `<div class="pitem ${p.id === S.you ? 'me' : ''}">${avatar(p.name)}
         <span class="nm">${esc(p.name)}</span>
-        ${p.id === S.hostId ? '<span class="tag">👑 host</span>' : ''}${p.bot ? '<span class="tag">bot</span>' : ''}${p.id === S.you ? '<span class="tag">jij</span>' : ''}
+        ${p.id === S.hostId ? '<span class="tag host">👑<span class="lbl2"> host</span></span>' : ''}${p.bot ? '<span class="tag">bot</span>' : ''}${p.id === S.you ? '<span class="tag you">jij</span>' : ''}
         <span class="rdy ${p.ready ? 'on' : ''}">${p.ready ? '✓ Ready' : 'wacht…'}</span>
         ${host && p.id !== S.you ? `<button class="sec sm" data-kick="${p.id}" title="Verwijder uit kamer">✕ Verwijder</button>` : ''}</div>`).join('')}</div>
     </div>
@@ -575,20 +575,29 @@ function fitGame() {
   const root = document.documentElement;
   root.classList.remove('noscroll');
   const dock = app.querySelector('.dock');
-  const cap = Math.min(66, innerWidth * 0.135);
+  const narrow = innerWidth <= 820; // telefoon/tablet: de hand (waar je op tikt) blijft groot, het bord krimpt eerst
   const fitting = !(S && S.gamePhase === 'gameOver');
   const dpr = window.devicePixelRatio || 1;
   const snap = (v) => Math.floor(v * dpr) / dpr; // hele fysieke pixels
-  let cw = snap(cap);
-  for (let i = 0; i < 10; i++) {
+  const cap = Math.min(66, innerWidth * 0.135);
+  let cw = snap(cap); // handkaarten
+  let bw = snap(cap * (narrow ? 0.85 : 0.8)); // kaarten op het bord en de tafel
+  for (let i = 0; i < 40; i++) {
     root.style.setProperty('--cw', cw + 'px');
+    root.style.setProperty('--bw', bw + 'px');
     root.style.setProperty('--dock-h', (dock ? dock.offsetHeight + 6 : 16) + 'px');
     if (!fitting) return;
     const over = root.scrollHeight - innerHeight;
     if (over <= 0) break;
-    const next = snap(Math.max(30, cw - Math.max(0.6, over / 6.8)));
-    if (next === cw) break;
-    cw = next;
+    const [pcw, pbw] = [cw, bw];
+    if (narrow) {
+      if (bw > 24) bw = snap(Math.max(24, bw - Math.max(0.5, over / 7.4))); // bord + tafel: ~7,4 px hoogte per px breedte
+      else if (cw > 42) cw = snap(Math.max(42, cw - Math.max(0.5, over / 1.6))); // hand
+    } else {
+      cw = snap(Math.max(30, cw - Math.max(0.6, over / 6.8)));
+      bw = snap(cw * 0.8);
+    }
+    if (cw === pcw && bw === pbw) break;
   }
   if (fitting && root.scrollHeight <= innerHeight) root.classList.add('noscroll');
 }

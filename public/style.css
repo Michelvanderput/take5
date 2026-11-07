@@ -130,7 +130,7 @@ select option { background: #151b30; }
 .card {
   --tc: var(--t1);
   --w: var(--cw);
-  position: relative; flex: none; width: var(--w); height: calc(var(--w) * 1.485); font-size: calc(var(--w) / 66 * 16px);
+  position: relative; flex: none; width: var(--w); height: calc(var(--w) * 1.485); font-size: calc(var(--w) * 0.2424); /* 16px bij 66px breed; een lengte delen door een getal, niet maal een lengte */
   border-radius: .75em; overflow: hidden;
   background: linear-gradient(160deg, #ffffff, #eef2f7); color: #0f172a; user-select: none;
   border: 1px solid rgba(15, 23, 42, .12); box-shadow: 0 6px 16px -6px rgba(0, 0, 0, .55), inset 0 1px 0 #fff;
@@ -144,8 +144,7 @@ select option { background: #151b30; }
 .card.p2 { --tc: var(--t2); } .card.p3 { --tc: var(--t3); } .card.p5 { --tc: var(--t5); }
 .card.p7 { --tc: var(--t7); background: linear-gradient(160deg, #faf5ff, #ede1ff); }
 .card.p7::before { background: linear-gradient(90deg, #a855f7, #ec4899); }
-.card.sm { --w: calc(var(--cw) * .74); }
-.board .card { --w: calc(var(--cw) * var(--bf)); }
+.card.sm, .board .card { --w: var(--bw, calc(var(--cw) * .74)); } /* bord/tafel: eigen maat, los van de hand */
 .card.empty { background: rgba(255, 255, 255, .03); border: 1.5px dashed rgba(255, 255, 255, .16); box-shadow: none; }
 .card.empty::before { display: none; }
 
@@ -395,3 +394,43 @@ button#ready.on { animation: none; }
 
 /* lange kreten op twee regels */
 .shout.wrap { white-space: normal; width: max-content; max-width: min(62vw, 620px); text-align: center; line-height: 1.08; }
+
+/* ---- telefoon: compact en groot genoeg om op te tikken ---- */
+@media (max-width: 560px) {
+  main { padding: 8px 10px var(--dock-h, 190px); }
+  .topbar { margin-bottom: 6px; }
+  .pl { grid-template-columns: auto 1fr auto; gap: 0 8px; padding: 5px 10px; min-width: 0; border-radius: 14px; }
+  .pl .avatar { grid-row: auto; width: 28px; height: 28px; font-size: .85rem; }
+  .pl .dot { width: 11px; height: 11px; }
+  .pl .nm { font-size: .85rem; max-width: 22vw; }
+  .pl .sc { font-size: .75rem; white-space: nowrap; }
+  .pl .sc b { font-size: .95rem; }
+  .players { gap: 6px; padding: 2px 2px 6px; }
+  .status { min-height: 26px; margin: 0 0 6px; }
+  .status .main { font-size: 1rem; }
+  .status .sub { display: none; }
+  .board { gap: 5px; }
+  .brow { padding: 5px 8px; gap: 5px; border-radius: 14px; }
+  .brow .lane { width: 22px; height: 22px; font-size: .7rem; }
+  .brow .tot { font-size: .8rem; }
+  .tray { min-height: calc(var(--bw, 40px) * 1.485 + 18px); margin: 6px 0 0; }
+  .tray .who { font-size: .6rem; }
+  .dock { padding: 6px 10px calc(8px + env(safe-area-inset-bottom)); }
+  .dock .inner { gap: 6px; }
+  .dock button.lg { padding: 8px 24px; font-size: .95rem; }
+  .hand { padding-top: 20px; margin-top: -10px; gap: 5px; }
+}
+
+@media (max-width: 560px) {
+  .pitem { gap: 8px; padding: 8px 10px; }
+  .pitem .nm { flex: 1 1 auto; min-width: 4.5em; }
+  .pitem .tag.you, .pitem .tag.host .lbl2 { display: none; } /* ruimte voor de naam: je eigen rij is gemarkeerd, host = kroon */
+  .pitem.me { border-color: rgba(52, 211, 153, .6); }
+  .plist { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+  .hand { padding-top: 24px; margin-top: -12px; }
+  .hand .card:hover { transform: none; }
+  .hand .card.sel { transform: translateY(-14px) scale(1.05); }
+}
