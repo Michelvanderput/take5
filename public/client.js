@@ -581,7 +581,7 @@ function fitGame() {
   const snap = (v) => Math.floor(v * dpr) / dpr; // hele fysieke pixels
   const cap = Math.min(66, innerWidth * 0.135);
   let cw = snap(cap); // handkaarten
-  let bw = snap(cap * (narrow ? 0.85 : 0.8)); // kaarten op het bord en de tafel
+  let bw = snap(narrow ? Math.min(62, (innerWidth - 110) / 5.2) : cap * 0.8); // kaarten op het bord en de tafel
   for (let i = 0; i < 40; i++) {
     root.style.setProperty('--cw', cw + 'px');
     root.style.setProperty('--bw', bw + 'px');
@@ -591,8 +591,9 @@ function fitGame() {
     if (over <= 0) break;
     const [pcw, pbw] = [cw, bw];
     if (narrow) {
-      if (bw > 24) bw = snap(Math.max(24, bw - Math.max(0.5, over / 7.4))); // bord + tafel: ~7,4 px hoogte per px breedte
+      if (bw > 34) bw = snap(Math.max(34, bw - Math.max(0.5, over / 7.1))); // bord + tafel: ~7 px hoogte per px breedte (leesbaar blijven!)
       else if (cw > 42) cw = snap(Math.max(42, cw - Math.max(0.5, over / 1.6))); // hand
+      else if (bw > 28) bw = snap(Math.max(28, bw - Math.max(0.5, over / 7.1))); // laatste redmiddel
     } else {
       cw = snap(Math.max(30, cw - Math.max(0.6, over / 6.8)));
       bw = snap(cw * 0.8);
@@ -621,9 +622,10 @@ function renderGame() {
     takenRects = [...app.querySelectorAll(`.brow[data-row="${ev.row}"] .card:not(.empty)`)].map((e) => e.getBoundingClientRect());
   }
 
+  const phone = innerWidth <= 560; // op een telefoon: Speel-knop in de statusregel i.p.v. een extra rij onderaan
   let status = '';
   let alert = false;
-  if (g === 'choosing') status = S.myChoice ? 'Gekozen — even wachten…' : 'Kies een kaart uit je hand';
+  if (g === 'choosing') status = S.myChoice ? 'Gekozen — even wachten…' : phone ? (selected ? 'Tik nogmaals om te spelen' : 'Kies een kaart') : 'Kies een kaart uit je hand';
   else if (g === 'resolving') status = 'Kaarten worden neergelegd…';
   else if (g === 'chooseRow') {
     alert = needMyRow;
@@ -711,6 +713,8 @@ function renderGame() {
 
   const secs = S.deadline && (g === 'choosing' || needMyRow) ? Math.max(0, Math.round((S.deadline - serverNow()) / 1000)) : null;
 
+  const playBtn = (cls, label) => `<button id="play" class="${cls}" ${selected && canPlay ? '' : 'disabled'} ${canPlay ? '' : 'style="visibility:hidden" tabindex="-1"'}>${label}</button>`;
+
   app.innerHTML = `
     <div class="topbar">
       <span class="pill"><b>Ronde ${S.round}</b></span>
@@ -720,20 +724,24 @@ function renderGame() {
       <span class="pill timer ${secs !== null && secs <= 10 ? 'hot' : ''}" id="timer" ${secs === null ? 'style="visibility:hidden"' : ''}>⏱ ${secs ?? 0}s</span>
     </div>
     ${playersHtml(g === 'choosing')}
-    <div class="status"><span class="main ${alert ? 'alert' : ''}">${status}</span>${evText ? `<span class="sub">${evText}</span>` : ''}</div>
+    <div class="status"><span class="main ${alert ? 'alert' : ''}">${status}</span>${evText ? `<span class="sub">${evText}</span>` : ''}${phone && S.hand.length ? playBtn('sm', selected ? `Speel ${selected}` : 'Speel') : ''}</div>
     <div class="stage"><div class="board">${rowsHtml}</div>
     ${tray || '<div class="tray"></div>'}</div>
     ${over}
     ${board}
     ${S.hand.length ? `<div class="dock"><div class="inner">
-      <button id="play" class="lg" ${selected && canPlay ? '' : 'disabled'} ${canPlay ? '' : 'style="visibility:hidden" tabindex="-1"'}>${selected ? `Speel ${selected}` : 'Kies een kaart'}</button>
+      ${phone ? '' : playBtn('lg', selected ? `Speel ${selected}` : 'Kies een kaart')}
       ${handHtml}</div></div>` : ''}`;
 
   fitGame();
   rehide();
   if (S.myChoice === null && selected !== null && !S.hand.includes(selected)) selected = null;
   if (canPlay) {
-    app.querySelectorAll('.hand .card').forEach((el) => (el.onclick = () => { selected = +el.dataset.card; sfx.tick(); buzz(8); renderGame(); }));
+    app.querySelectorAll('.hand .card').forEach((el) => (el.onclick = () => {
+      const card = +el.dataset.card;
+      if (selected === card) { playSelected(); return; } // nogmaals tikken = spelen
+      selected = card; sfx.tick(); buzz(8); renderGame();
+    }));
   }
   const pb = document.getElementById('play');
   if (pb && canPlay) pb.onclick = () => playSelected();

@@ -434,3 +434,13 @@ button#ready.on { animation: none; }
   .hand .card:hover { transform: none; }
   .hand .card.sel { transform: translateY(-14px) scale(1.05); }
 }
+
+/* ---- telefoon v2: Speel-knop in de statusregel, tafelkaarten kleiner, bord groot ---- */
+@media (max-width: 560px) {
+  .status { display: flex; flex-direction: row; align-items: center; gap: 8px; min-height: 34px; margin: 0 0 6px; }
+  .status .main { flex: 1; min-width: 0; }
+  .status #play { flex: none; padding: 6px 16px; font-size: .9rem; border-radius: 10px; }
+  .tray .card { --w: calc(var(--bw, 40px) * .8); }
+  .tray { min-height: calc(var(--bw, 40px) * .8 * 1.485 + 16px); }
+  .tray .who { font-size: .55rem; max-width: calc(var(--bw, 40px) * .95); }
+}
