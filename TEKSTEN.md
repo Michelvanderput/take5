@@ -4,19 +4,20 @@
 
 ## Kreten bij een rij nemen (alleen 5+ punten; onder 5 punten alleen een lichte landing)
 `{n}` = naam van de speler, `{titel}` = sukkel / dombo / kneus / loser / bitch. Vanaf 8 punten (niveau 4) in HOOFDLETTERS.
-`(6e)` = alleen bij een echte 6e-kaart-straf, niet bij "te lage kaart".
 
-**5 punten:** Boem! · Ouch! · Jammer man! · Lekker voor je! · Bro... gaat het? · Ik ga stuk! · Ik kom niet meer bij! · (6e) Je moet juist niet de 6e kaart opgooien he!
+**Titels** (voor `{titel}`, willekeurig): sukkel · dombo · kneus · loser · bitch
 
-**6 punten:** Boem! · Lekker voor je, {n}! · Jammer man! · Sukkeltje! · Ouch! · Bro... gaat het? · Ik ga stuk! · Ik kom niet meer bij! · Snap je het nog wel helemaal? · Even allemaal {n} uitlachen! · (6e) Je moet juist niet de 6e kaart opgooien he!
+**5 punten:** Boem! · Ouch! · Jammer man! · Lekker voor je! · Bro... gaat het? · Ik ga stuk! · Ik kom niet meer bij!
 
-**7 punten:** Hoe dom ben je! · Lekker voor je, {n}! · Sukkeltje! · Tantoe Sulletje! · Jammer man, dombo! · Loser! · Snap je het nog wel helemaal? · Ben je helemaal 100? · Vraag Claude even om te helpen! · Even allemaal {n} uitlachen! · (6e) Je moet juist niet de 6e kaart opgooien he!
+**6 punten:** Boem! · Lekker voor je, {n}! · Jammer man! · Sukkeltje! · Ouch! · Bro... gaat het? · Ik ga stuk! · Ik kom niet meer bij!
 
-**8 punten:** Wat kan je wel?! · Hoe dom ben je, sukkel! · Tantoe Sulletje! · Boem, dombo! · Ouch, kneus! · Loser! · Ben je helemaal 100? · Vraag Claude even om te helpen! · Ongekende {titel}! · Snap je het nog wel helemaal?
+**7 punten:** Hoe dom ben je! · Lekker voor je, {n}! · Sukkeltje! · Tantoe Sulletje! · Jammer man, dombo! · Loser! · Ben je helemaal 100? · Vraag Claude even om te helpen! · Even allemaal {n} uitlachen!
 
-**9 punten:** Hoe dom ben je, dombo?! · Wat kan je wel, kneus?! · Lekker voor je, bitch! · Tantoe Sulletje! · Boem, bitch! · Fucking loser! · Loser, bitch! · Ongekende {titel}! · Ben je helemaal 100?! · Vraag Claude even om te helpen! · Even allemaal {n} uitlachen!
+**8 punten:** Wat kan je wel?! · Hoe dom ben je, sukkel! · Tantoe Sulletje! · Boem, dombo! · Ouch, kneus! · Loser! · Ben je helemaal 100? · Vraag Claude even om te helpen!
 
-**10+ punten:** Boem, bitch! · Hoe dom ben je, dombo?! · Wat kan je wel, kneus?! · Lekker voor je, bitch! · Tantoe Sulletje! · Hoppa bitch! · Fucking loser! · Fucking loser, {n}! · Loser, dombo! · Ongekende {titel}! · Ben je helemaal 100?! · Ik ga stuk! · Ik kom niet meer bij! · Bro... gaat het? · Even allemaal {n} uitlachen!
+**9 punten:** Hoe dom ben je, dombo?! · Wat kan je wel, kneus?! · Lekker voor je, bitch! · Tantoe Sulletje! · Boem, bitch! · Fucking loser! · Loser, bitch! · Ben je helemaal 100?! · Vraag Claude even om te helpen! · Even allemaal {n} uitlachen!
+
+**10+ punten:** Boem, bitch! · Hoe dom ben je, dombo?! · Wat kan je wel, kneus?! · Lekker voor je, bitch! · Tantoe Sulletje! · Hoppa bitch! · Fucking loser! · Fucking loser, {n}! · Ongekende {titel}! · Ben je helemaal 100?! · Ik ga stuk! · Ik kom niet meer bij! · Bro... gaat het? · Even allemaal {n} uitlachen!
 
 ## Startscherm
 Take 5! · "Het razendsnelle kaartspel waarin je niet de 6e kaart wilt leggen. Speel online met 2 tot 10 vrienden, ieder op het eigen scherm." · Jouw naam · **Nieuw spel**: "Maak een kamer en deel de code met je vrienden." [Kamer maken] · **Meedoen**: "Heb je een code gekregen? Vul hem hier in." ABCD [Deelnemen]
