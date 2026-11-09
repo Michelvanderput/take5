@@ -238,16 +238,6 @@ const SHOUTS = [
 const TITELS = ['sukkel', 'dombo', 'kneus', 'loser', 'bitch'];
 // Voorspelbaar 'toeval': dezelfde seed geeft bij elke speler dezelfde tekst, kanteling, vonken en schudbeweging.
 const seeded = (a) => () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-// Zeldzame 'uitlach-foto' bij 10+ punten. Plaatjes staan in public/memes/; de namen in public/memes/index.json
-// (bijv. ["lachen.jpg", "wijzen.png"]). Ontbreekt de lijst of een bestand, dan wordt dat gewoon overgeslagen.
-// Voor iedereen komt dezelfde lijst, dus iedereen ziet bij dezelfde klap hetzelfde plaatje.
-const MEME_CHANCE = 0.35;
-let MEME_FILES = [];
-const memeOk = {};
-fetch('memes/index.json').then((r) => (r.ok ? r.json() : [])).then((list) => {
-  MEME_FILES = (Array.isArray(list) ? list : []).filter((f) => /^[\w.-]+\.(jpe?g|png|webp|gif)$/i.test(f));
-  MEME_FILES.forEach((f) => { const i = new Image(); i.onload = () => { memeOk[f] = true; }; i.src = 'memes/' + f; });
-}).catch(() => {});
 const COLORS = ['#ef4444', '#f97316', '#fbbf24', '#ffffff', '#a855f7'];
 
 /** De klap. L = niveau (0 = licht). Hoe hoger, hoe heftiger: schudden, flits, schokgolven, scherven, bas, trillen. */
@@ -322,22 +312,6 @@ function impact(L, rect, who = '', seed = 0, kind = '') {
   const w = Math.max(t.offsetWidth, t.scrollWidth); // layoutbreedte (incl. het langste woord), zonder de schaal van de animatie
   if (w > maxW) t.style.setProperty('--fs', parseFloat(t.style.getPropertyValue('--fs')) * (maxW / w) + 'rem');
   t.addEventListener('animationend', () => t.remove());
-  // heel af en toe (niveau 6, voor iedereen op hetzelfde moment): iedereen lacht je uit
-  if (L === 6 && rnd() < MEME_CHANCE) {
-    const file = MEME_FILES.length ? MEME_FILES[(rnd() * MEME_FILES.length) | 0] : null; // altijd dezelfde reeks, voor iedereen gelijk
-    const tilt = (rnd() > 0.5 ? 1 : -1) * (3 + rnd() * 4);
-    if (file && memeOk[file]) {
-      document.querySelectorAll('.meme').forEach((e) => e.remove());
-      const m = document.createElement('img');
-      m.className = 'meme';
-      m.src = 'memes/' + file;
-      m.alt = '';
-      m.style.setProperty('--dur', 2.3 + L * 0.15 + 's');
-      m.style.setProperty('--tilt', tilt + 'deg');
-      document.body.appendChild(m);
-      m.addEventListener('animationend', () => m.remove());
-    }
-  }
 }
 
 /** Na de klap: de gepakte rij vliegt naar de speler; +punten zweeft omhoog. `delay`: wacht op de klap. */

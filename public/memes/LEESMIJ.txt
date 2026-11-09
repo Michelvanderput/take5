@@ -1,7 +1,0 @@
-Uitlach-foto's (verschijnen af en toe bij 10+ punten)
-
-Zet hier gewoon de plaatjes neer (jpg, png, webp of gif). Verder hoef je niets te doen:
-de lijst (index.json) wordt automatisch bijgewerkt bij het uitrollen (npm run build) of met `npm run memes`.
-
-Tips: liefst ~640px breed en < 100 KB. Bestandsnamen zonder spaties (letters, cijfers, - _ .).
-Watermerk is geen probleem.

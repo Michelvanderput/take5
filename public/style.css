@@ -370,21 +370,6 @@ select option { background: #151b30; }
 button#ready:not(.on) { background: var(--glass-2); color: var(--ink); border: 1px solid var(--line); box-shadow: none; }
 button#ready.on { animation: none; }
 
-/* uitlach-foto (heel af en toe bij 10+ punten) */
-.meme { position: fixed; left: 50%; top: 60%; z-index: 35; pointer-events: none; width: auto; height: auto; max-width: min(70vw, 360px); max-height: 40vh;
-  object-fit: contain; background: #fff; border-radius: 22px; border: 4px solid #fff;
-  box-shadow: 0 0 0 4px rgba(239, 68, 68, .85), 0 0 60px 10px rgba(239, 68, 68, .7), 0 30px 70px rgba(0, 0, 0, .7);
-  transform: translate(-50%, -50%) rotate(var(--tilt)); animation: meme var(--dur, 3s) cubic-bezier(.2, 1.4, .4, 1) forwards; }
-@keyframes meme {
-  0% { transform: translate(-50%, -20%) rotate(calc(var(--tilt) * 3)) scale(.1); opacity: 0; }
-  7% { transform: translate(-50%, -50%) rotate(var(--tilt)) scale(1.45); opacity: 1; }
-  14% { transform: translate(-50%, -50%) rotate(var(--tilt)) scale(1); }
-  20%, 40%, 60%, 80% { transform: translate(calc(-50% - 7px), -50%) rotate(var(--tilt)) scale(1.04); }
-  30%, 50%, 70% { transform: translate(calc(-50% + 7px), calc(-50% - 4px)) rotate(var(--tilt)) scale(1.04); }
-  90% { opacity: 1; }
-  100% { transform: translate(-50%, -50%) rotate(var(--tilt)) scale(.85); opacity: 0; }
-}
-
 /* kroon op de leider */
 .pl.lead { border-color: rgba(251, 191, 36, .65); box-shadow: 0 0 0 1px rgba(251, 191, 36, .2), 0 8px 24px -10px rgba(251, 191, 36, .5); }
 .pl.lead.me { border-color: rgba(251, 191, 36, .85); }

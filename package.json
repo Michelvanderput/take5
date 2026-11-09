@@ -5,9 +5,7 @@
   "main": "server/dev.js",
   "scripts": {
     "start": "node server/dev.js",
-    "test": "node --test test/*.test.js",
-    "memes": "node scripts/memes.js",
-    "build": "node scripts/memes.js"
+    "test": "node --test test/*.test.js"
   },
   "license": "MIT",
   "engines": {

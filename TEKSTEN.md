@@ -1,6 +1,6 @@
 # Alle teksten in Take 5! Online
 
-(Zonder de foto's in `public/memes/`. Teksten staan in `public/client.js`, foutmeldingen in `server/`.)
+(Teksten staan in `public/client.js`, foutmeldingen in `server/`.)
 
 ## Kreten bij een rij nemen (alleen 5+ punten; onder 5 punten alleen een lichte landing)
 `{n}` = naam van de speler, `{titel}` = sukkel / dombo / kneus / loser / bitch. Vanaf 8 punten (niveau 4) in HOOFDLETTERS.
@@ -17,7 +17,6 @@
 **9 punten:** Hoe dom ben je, dombo?! · Wat kan je wel, kneus?! · Lekker voor je, bitch! · Tantoe Sulletje! · Boem, bitch! · Fucking loser! · Loser, bitch! · Ongekende {titel}! · Ben je helemaal 100?! · Vraag Claude even om te helpen! · Even allemaal {n} uitlachen!
 
 **10+ punten:** Boem, bitch! · Hoe dom ben je, dombo?! · Wat kan je wel, kneus?! · Lekker voor je, bitch! · Tantoe Sulletje! · Hoppa bitch! · Fucking loser! · Fucking loser, {n}! · Loser, dombo! · Ongekende {titel}! · Ben je helemaal 100?! · Ik ga stuk! · Ik kom niet meer bij! · Bro... gaat het? · Even allemaal {n} uitlachen!
-(Hier komt soms ook een foto uit `public/memes/`.)
 
 ## Startscherm
 Take 5! · "Het razendsnelle kaartspel waarin je niet de 6e kaart wilt leggen. Speel online met 2 tot 10 vrienden, ieder op het eigen scherm." · Jouw naam · **Nieuw spel**: "Maak een kamer en deel de code met je vrienden." [Kamer maken] · **Meedoen**: "Heb je een code gekregen? Vul hem hier in." ABCD [Deelnemen]
