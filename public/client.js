@@ -512,11 +512,13 @@ function renderLobby() {
     <div class="panel">
       <div class="row-flex"><h3>Spelers</h3><span class="tag">${S.players.length}/10</span>
         ${host ? '<button class="sec sm" id="bot" style="margin-left:auto">🤖 Bot toevoegen</button>' : ''}</div>
-      <div class="plist">${S.players.map((p) => `<div class="pitem ${p.id === S.you ? 'me' : ''}">${avatar(p.name)}
-        <span class="nm">${esc(p.name)}</span>
-        ${p.id === S.hostId ? '<span class="tag host">👑<span class="lbl2"> host</span></span>' : ''}${p.bot ? '<span class="tag">bot</span>' : ''}${p.id === S.you ? '<span class="tag you">jij</span>' : ''}
-        <span class="rdy ${p.ready ? 'on' : ''}">${p.ready ? '✓ Ready' : 'wacht…'}</span>
-        ${host && p.id !== S.you ? `<button class="sec sm" data-kick="${p.id}" title="Verwijder uit kamer">✕ Verwijder</button>` : ''}</div>`).join('')}</div>
+      <div class="plist">${S.players.map((p) => `<div class="pcard ${p.id === S.you ? 'me' : ''} ${p.ready ? 'ready' : ''}">
+        ${avatar(p.name)}
+        <div class="pinfo">
+          <div class="pname" title="${esc(p.name)}">${esc(p.name)}</div>
+          <div class="ptags">${p.id === S.hostId ? '<span class="tag host">👑 Host</span>' : ''}${p.bot ? '<span class="tag">🤖 Bot</span>' : ''}${p.id === S.you ? '<span class="tag you">Jij</span>' : ''}<span class="rdy ${p.ready ? 'on' : ''}">${p.ready ? '✓ Ready' : 'Wacht…'}</span></div>
+        </div>
+        ${host && p.id !== S.you ? `<button class="sec sm kick" data-kick="${p.id}" title="Verwijder ${esc(p.name)} uit de kamer" aria-label="Verwijder ${esc(p.name)}">✕</button>` : ''}</div>`).join('')}</div>
     </div>
     <div class="panel">
       <div class="row-flex">
