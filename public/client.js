@@ -434,7 +434,7 @@ function renderHome() {
       <h1><span class="grad-text">Take 5!</span></h1>
       <p>Het razendsnelle kaartspel waarin je niet de 6e kaart wilt leggen. Speel online met 2 tot 10 vrienden, ieder op het eigen scherm.</p>
     </section>
-    <div class="namebox"><input id="name" placeholder="Jouw naam" maxlength="16" value="${esc(pendingName)}" autocomplete="nickname"></div>
+    <div class="namebox"><input id="name" placeholder="Jouw naam" maxlength="20" value="${esc(pendingName)}" autocomplete="nickname"></div>
     <div class="grid2">
       <div class="panel">
         <h3>Nieuw spel</h3>

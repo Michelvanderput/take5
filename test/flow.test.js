@@ -53,7 +53,9 @@ test('kamer maken en deelnemen', async () => {
   assert.ok(cas.token);
   // naam wordt schoongemaakt en afgekapt, lege naam wordt 'Speler'
   const raar = await w.must(null, { t: 'join', code: host.code, name: '<b>X</b>'.repeat(10) });
-  assert.ok(raar.state.players.every((p) => p.name.length <= 16 && !/[<>]/.test(p.name)));
+  assert.ok(raar.state.players.every((p) => p.name.length <= 20 && !/[<>]/.test(p.name)));
+  const lang = await w.must(null, { t: 'join', code: host.code, name: 'Wilhelmina-Alexandra Extra' });
+  assert.ok(lang.state.players.some((p) => p.name === 'Wilhelmina-Alexandra'), 'tot 20 tekens blijft staan');
   const leeg = await w.must(null, { t: 'join', code: host.code, name: '   ' });
   assert.ok(leeg.state.players.some((p) => p.name === 'Speler'));
   assert.ok(bob.token);

@@ -17,7 +17,7 @@ const takeMs = (pts) => Math.round(T.STEP * (pts < 5 ? 1.5 : 1.7 + (Math.min(pts
 const BOT_NAMES = ['Koe Klaas', 'Bella', 'Dolly', 'Muu-ke', 'Gerda', 'Stier Piet', 'Lotte', 'Daisy', 'Henk'];
 
 const hydrate = (d) => Object.assign(Object.create(Game.prototype), d, { rng: Math.random });
-const cleanName = (n) => String(n || '').replace(/[^\p{L}\p{N} _.-]/gu, '').trim().slice(0, 16) || 'Speler';
+const cleanName = (n) => String(n || '').replace(/[^\p{L}\p{N} _.-]/gu, '').trim().slice(0, 20) || 'Speler';
 const connected = (s, m, ctx) => m.bot || (ctx.seen[m.id] && ctx.now - ctx.seen[m.id] < PRESENCE_MS);
 const isAuto = (s, id, ctx) => {
   const m = s.members.find((x) => x.id === id);
