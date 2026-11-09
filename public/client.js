@@ -43,12 +43,13 @@ function onResponse(j) {
   }
   if (j.left) return clearSession();
   if (S && S.code === j.state.code && j.state.v < S.v) return; // oud antwoord
-  const cmp = JSON.stringify({ ...j.state, now: 0 });
+  const cmp = JSON.stringify({ ...j.state, now: 0, chat: 0 });
   const changed = !S || cmp !== lastCmp;
   lastCmp = cmp;
   S = j.state;
   if (S.now) skew = S.now - Date.now();
   if (changed) render();
+  chatUpdate(S.chat || []);
   if (!busy) schedulePoll();
 }
 
@@ -61,6 +62,7 @@ function fail(e) {
 function clearSession() {
   session = null;
   S = null;
+  chatReset();
   lastCmp = '';
   localStorage.removeItem('take5');
   render();
@@ -864,6 +866,92 @@ setInterval(() => {
   const rc = document.getElementById('rcount');
   if (S && S.deadline && rc) rc.textContent = Math.max(0, Math.ceil((S.deadline - serverNow()) / 1000));
 }, 500);
+
+
+// ---------- chat (staat buiten #app, zodat typen nooit onderbroken wordt door hertekenen) ----------
+const chatBtn = document.createElement('button');
+chatBtn.id = 'chatbtn';
+chatBtn.className = 'sec';
+chatBtn.hidden = true;
+chatBtn.setAttribute('aria-label', 'Chat');
+chatBtn.innerHTML = '💬<i id="chatbadge" hidden></i>';
+const chatBox = document.createElement('div');
+chatBox.id = 'chatbox';
+chatBox.hidden = true;
+chatBox.innerHTML = `<div class="ch-head"><b>Chat</b><button class="sec sm" id="chatclose" aria-label="Sluiten">✕</button></div>
+  <div class="ch-list" id="chatlist" aria-live="polite"></div>
+  <div class="ch-quick" id="chatquick"></div>
+  <form class="ch-form" id="chatform" autocomplete="off"><input id="chatinput" maxlength="200" placeholder="Typ een bericht…" enterkeyhint="send" autocomplete="off"><button type="submit">Stuur</button></form>`;
+document.body.append(chatBtn, chatBox);
+let chatOpen = false;
+let chatSeen = 0; // hoogste bericht dat de gebruiker heeft gezien
+let chatLast = -1;
+let chatInit = false;
+const QUICK = ['😂', '😭', '👏', '🔥', 'Boem!', 'Sukkel 😅', 'GG'];
+const chatList = chatBox.querySelector('#chatlist');
+chatBox.querySelector('#chatquick').innerHTML = QUICK.map((q) => `<button type="button" class="sec sm">${q}</button>`).join('');
+const chatInput = chatBox.querySelector('#chatinput');
+
+function chatRender(list) {
+  const stick = chatList.scrollHeight - chatList.scrollTop - chatList.clientHeight < 60;
+  chatList.innerHTML = list.length
+    ? list.map((m) => {
+      const mine = S && m.id === S.you;
+      return `<div class="ch-msg ${mine ? 'mine' : ''}"><span class="ch-name" style="--h:${hue(m.name)}">${esc(m.name)}</span><span class="ch-text">${esc(m.text)}</span></div>`;
+    }).join('')
+    : '<div class="muted ch-empty">Nog geen berichten. Zeg iets liefs (of niet) 😏</div>';
+  if (stick) chatList.scrollTop = chatList.scrollHeight;
+}
+
+function chatBadge(n) {
+  const b = document.getElementById('chatbadge');
+  b.hidden = !n;
+  b.textContent = n > 9 ? '9+' : n;
+}
+
+function chatUpdate(list) {
+  chatBtn.hidden = !session || !S;
+  if (chatBtn.hidden) { if (chatOpen) chatToggle(false); return; }
+  const top = list.length ? list[list.length - 1].n : 0;
+  if (!chatInit) chatSeen = top; // bij (her)laden zijn oude berichten niet 'nieuw'
+  if (top === chatLast) return;
+  const fresh = list.filter((m) => m.n > chatSeen && !(S && m.id === S.you));
+  if (chatInit && fresh.length && !chatOpen) sfx.tick();
+  chatInit = true;
+  chatLast = top;
+  chatRender(list);
+  if (chatOpen) { chatSeen = top; chatBadge(0); } else chatBadge(chatInit ? fresh.length : 0);
+}
+
+function chatToggle(open = !chatOpen) {
+  chatOpen = open;
+  chatBox.hidden = !open;
+  document.body.classList.toggle('chat-open', open);
+  if (open) {
+    chatSeen = chatLast > 0 ? chatLast : 0;
+    chatBadge(0);
+    chatList.scrollTop = chatList.scrollHeight;
+    if (innerWidth > 560) chatInput.focus();
+  }
+}
+
+function chatReset() {
+  chatSeen = 0; chatLast = -1; chatInit = false; chatList.innerHTML = '';
+  chatBadge(0); chatBtn.hidden = true; chatToggle(false);
+}
+
+function chatSend(text) {
+  text = String(text || '').trim();
+  if (!text || !session) return;
+  chatInput.value = '';
+  send({ t: 'chat', text });
+}
+
+chatBtn.onclick = () => chatToggle();
+chatBox.querySelector('#chatclose').onclick = () => chatToggle(false);
+chatBox.querySelector('#chatform').onsubmit = (e) => { e.preventDefault(); chatSend(chatInput.value); };
+chatBox.querySelector('#chatquick').onclick = (e) => { const b = e.target.closest('button'); if (b) chatSend(b.textContent); };
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && chatOpen) chatToggle(false); });
 
 // mute-knop
 const muteBtn = document.createElement('button');

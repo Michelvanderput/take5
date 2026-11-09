@@ -10,6 +10,8 @@ const T = {
   BREAK: 9000, // pauze tussen rondes
 };
 const PRESENCE_MS = 12000;
+const CHAT_GAP = 600; // ms tussen twee berichten van dezelfde speler
+const CHAT_KEEP = 50; // bewaarde berichten per kamer
 // Na het nemen van een rij heeft de animatie meer tijd nodig: hoe meer punten, hoe dramatischer.
 const takeMs = (pts) => Math.round(T.STEP * (pts < 5 ? 1.5 : 1.7 + (Math.min(pts, 10) - 5) * 0.09));
 const BOT_NAMES = ['Koe Klaas', 'Bella', 'Dolly', 'Muu-ke', 'Gerda', 'Stier Piet', 'Lotte', 'Daisy', 'Henk'];
@@ -33,7 +35,7 @@ const schedule = (s, now, ms, action) => {
 function newRoom(code, hostName) {
   const m = { id: crypto.randomUUID(), token: crypto.randomUUID(), name: cleanName(hostName), bot: false };
   return {
-    state: { code, version: 0, hostId: m.id, members: [m], phase: 'lobby', targetScore: 66, game: null, nextAt: null, nextAction: null },
+    state: { code, version: 0, hostId: m.id, members: [m], chat: [], chatSeq: 0, phase: 'lobby', targetScore: 66, game: null, nextAt: null, nextAction: null },
     member: m,
   };
 }
@@ -116,7 +118,7 @@ function view(s, forId, ctx) {
   });
   const v = {
     v: s.version, code: s.code, you: forId, hostId: s.hostId, phase: s.phase,
-    targetScore: s.targetScore, players, deadline: s.nextAt, now: ctx.now,
+    targetScore: s.targetScore, players, deadline: s.nextAt, now: ctx.now, chat: s.chat || [],
   };
   if (g) {
     const mine = g.player(forId);
@@ -140,6 +142,16 @@ function apply(s, me, body, ctx) {
     case 'poll':
     case 'resume':
       return;
+    case 'chat': {
+      const text = String(body.text ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
+      if (!text) return;
+      if (me.lastChat && ctx.now - me.lastChat < CHAT_GAP) throw new Error('Rustig aan, niet zo snel');
+      me.lastChat = ctx.now;
+      s.chat = s.chat || [];
+      s.chat.push({ n: (s.chatSeq = (s.chatSeq || 0) + 1), id: me.id, name: me.name, text, at: ctx.now });
+      if (s.chat.length > CHAT_KEEP) s.chat = s.chat.slice(-CHAT_KEEP);
+      return;
+    }
     case 'addBot': {
       host();
       if (s.phase !== 'lobby') throw new Error('Spel is al gestart');

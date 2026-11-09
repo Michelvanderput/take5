@@ -204,7 +204,7 @@ select option { background: #151b30; }
 
 /* ---- extra "feel" ---- */
 #mute { position: fixed; top: 10px; right: 10px; z-index: 25; width: 40px; height: 40px; padding: 0; border-radius: 50%; font-size: 1.1rem; }
-.topbar { padding-right: 48px; }
+.topbar { padding-right: 96px; }
 
 
 .card.back {
@@ -443,4 +443,27 @@ button#ready.on { animation: none; }
   .tray .card { --w: calc(var(--bw, 40px) * .8); }
   .tray { min-height: calc(var(--bw, 40px) * .8 * 1.485 + 16px); }
   .tray .who { font-size: .55rem; max-width: calc(var(--bw, 40px) * .95); }
+}
+
+/* ---- chat ---- */
+#chatbtn { position: fixed; top: 10px; right: 58px; z-index: 25; width: 40px; height: 40px; padding: 0; border-radius: 50%; font-size: 1.1rem; }
+#chatbadge { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--t5); color: #fff; font: 700 .7rem/18px Inter, sans-serif; font-style: normal; text-align: center; }
+#chatbox { position: fixed; z-index: 45; right: 12px; bottom: 12px; width: min(340px, calc(100vw - 24px)); height: min(460px, 70vh); display: flex; flex-direction: column; gap: 8px;
+  padding: 12px; border-radius: 20px; background: rgba(15, 23, 42, .94); border: 1px solid var(--line); box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .85);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); animation: rsIn .3s cubic-bezier(.2, 1.2, .4, 1); }
+#chatbox[hidden] { display: none; }
+.ch-head { display: flex; align-items: center; justify-content: space-between; }
+.ch-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 2px; overscroll-behavior: contain; }
+.ch-msg { max-width: 92%; align-self: flex-start; padding: 6px 10px; border-radius: 14px 14px 14px 4px; background: rgba(255, 255, 255, .08); word-break: break-word; }
+.ch-msg.mine { align-self: flex-end; border-radius: 14px 14px 4px 14px; background: rgba(52, 211, 153, .2); }
+.ch-name { display: block; font-size: .68rem; font-weight: 700; color: hsl(var(--h) 80% 70%); }
+.ch-text { font-size: .92rem; }
+.ch-empty { margin: auto; text-align: center; font-size: .85rem; }
+.ch-quick { display: flex; gap: 6px; flex-wrap: wrap; }
+.ch-form { display: flex; gap: 8px; }
+.ch-form input { flex: 1; min-width: 0; padding: 10px 12px; }
+.ch-form button { padding: 10px 14px; }
+@media (max-width: 560px) {
+  #chatbtn { top: 10px; right: 58px; }
+  #chatbox { right: 0; left: 0; bottom: 0; width: auto; height: min(62vh, 440px); border-radius: 20px 20px 0 0; }
 }
