@@ -511,7 +511,9 @@ function renderLobby() {
     </div>
     <div class="panel">
       <div class="row-flex"><h3>Spelers</h3><span class="tag">${S.players.length}/10</span>
-        ${host ? '<button class="sec sm" id="bot" style="margin-left:auto">🤖 Bot toevoegen</button>' : ''}</div>
+        ${host ? `<span style="margin-left:auto" class="row-flex"><label class="muted botlvl" title="Hoe slim de bots spelen">🤖
+          <select id="botlevel">${[['easy', 'Makkelijk'], ['normal', 'Normaal'], ['hard', 'Slim']].map(([v, l]) => `<option value="${v}" ${v === S.botLevel ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+          <button class="sec sm" id="bot">+ Bot</button></span>` : S.players.some((p) => p.bot) ? `<span class="tag" style="margin-left:auto">🤖 ${{ easy: 'Makkelijk', normal: 'Normaal', hard: 'Slim' }[S.botLevel] || 'Normaal'}</span>` : ''}</div>
       <div class="plist">${S.players.map((p) => `<div class="pcard ${p.id === S.you ? 'me' : ''} ${p.ready ? 'ready' : ''}">
         ${avatar(p.name)}
         <div class="pinfo">
@@ -541,6 +543,7 @@ function renderLobby() {
   document.getElementById('ready').onclick = () => { sfx.tick(); buzz(10); send({ t: 'ready', v: !me.ready }); };
   if (host) {
     document.getElementById('bot').onclick = () => send({ t: 'addBot' });
+    document.getElementById('botlevel').onchange = (e) => send({ t: 'botlevel', v: e.target.value });
     document.getElementById('start').onclick = () => send({ t: 'start' });
     document.getElementById('target').onchange = (e) => send({ t: 'target', v: +e.target.value });
     app.querySelectorAll('[data-kick]').forEach((b) => (b.onclick = () => send({ t: 'kick', id: b.dataset.kick })));

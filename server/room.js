@@ -2,6 +2,7 @@
 // Stateless kamerlogica: alle state is JSON, tijd-gestuurde acties lopen via `tick`.
 const crypto = require('crypto');
 const { Game, sumPoints } = require('./game');
+const bot = require('./bot');
 
 const T = {
   STEP: +process.env.STEP_MS || 1000, // pauze tussen kaarten (animatie)
@@ -23,10 +24,11 @@ const isAuto = (s, id, ctx) => {
   const m = s.members.find((x) => x.id === id);
   return !m || m.bot || !connected(s, m, ctx);
 };
-const pick = (g, id) => {
-  const h = g.player(id).hand;
-  return h[Math.floor(Math.random() * h.length)];
+const levelOf = (s, id) => {
+  const m = s.members.find((x) => x.id === id);
+  return m && m.bot ? s.botLevel || 'normal' : 'normal'; // afwezige/te late mensen worden redelijk gespeeld
 };
+const pick = (s, g, id) => bot.chooseCard(g, id, levelOf(s, id));
 const schedule = (s, now, ms, action) => {
   s.nextAt = now + ms;
   s.nextAction = action;
@@ -35,7 +37,7 @@ const schedule = (s, now, ms, action) => {
 function newRoom(code, hostName) {
   const m = { id: crypto.randomUUID(), token: crypto.randomUUID(), name: cleanName(hostName), bot: false };
   return {
-    state: { code, version: 0, hostId: m.id, members: [m], chat: [], chatSeq: 0, phase: 'lobby', targetScore: 66, game: null, nextAt: null, nextAction: null },
+    state: { code, version: 0, hostId: m.id, members: [m], chat: [], chatSeq: 0, botLevel: 'normal', phase: 'lobby', targetScore: 66, game: null, nextAt: null, nextAction: null },
     member: m,
   };
 }
@@ -46,7 +48,7 @@ function settleChoosing(s, ctx) {
   for (const p of g.players) {
     if (g.chosen[p.id] !== undefined) continue;
     if (p.hand.length === 1) g.chosen[p.id] = p.hand[0]; // laatste kaart: geen keuze, automatisch
-    else if (isAuto(s, p.id, ctx)) g.chosen[p.id] = pick(g, p.id);
+    else if (isAuto(s, p.id, ctx)) g.chosen[p.id] = pick(s, g, p.id);
   }
   if (g.allChosen()) {
     g.reveal();
@@ -60,13 +62,13 @@ function runAction(s, ctx) {
   switch (s.nextAction) {
     case 'force':
       if (g.phase !== 'choosing') break;
-      for (const p of g.players) if (g.chosen[p.id] === undefined) g.chosen[p.id] = pick(g, p.id);
+      for (const p of g.players) if (g.chosen[p.id] === undefined) g.chosen[p.id] = pick(s, g, p.id);
       g.reveal();
       schedule(s, now, T.STEP, 'step');
       return;
     case 'autoRow':
       if (g.phase === 'chooseRow') {
-        const tev = g.chooseRow(g.waitingFor, g.cheapestRow());
+        const tev = g.chooseRow(g.waitingFor, bot.chooseRow(g, g.waitingFor, levelOf(s, g.waitingFor)));
         schedule(s, now, takeMs(tev.points), 'step');
         return;
       }
@@ -118,7 +120,7 @@ function view(s, forId, ctx) {
   });
   const v = {
     v: s.version, code: s.code, you: forId, hostId: s.hostId, phase: s.phase,
-    targetScore: s.targetScore, players, deadline: s.nextAt, now: ctx.now, chat: s.chat || [],
+    targetScore: s.targetScore, botLevel: s.botLevel || 'normal', players, deadline: s.nextAt, now: ctx.now, chat: s.chat || [],
   };
   if (g) {
     const mine = g.player(forId);
@@ -175,6 +177,12 @@ function apply(s, me, body, ctx) {
     case 'ready':
       if (s.phase !== 'lobby') throw new Error('Spel is al gestart');
       me.ready = body.v === undefined ? !me.ready : !!body.v;
+      return;
+    case 'botlevel':
+      host();
+      if (s.phase !== 'lobby') throw new Error('Spel is al gestart');
+      if (!bot.LEVELS.includes(body.v)) throw new Error('Onbekend niveau');
+      s.botLevel = body.v;
       return;
     case 'start': {
       host();

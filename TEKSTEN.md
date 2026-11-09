@@ -23,7 +23,7 @@
 Take 5! · "Het razendsnelle kaartspel waarin je niet de 6e kaart wilt leggen. Speel online met 2 tot 10 vrienden, ieder op het eigen scherm." · Jouw naam · **Nieuw spel**: "Maak een kamer en deel de code met je vrienden." [Kamer maken] · **Meedoen**: "Heb je een code gekregen? Vul hem hier in." ABCD [Deelnemen]
 
 ## Lobby
-Deel deze code met je vrienden · 🔗 Kopieer uitnodigingslink · Link gekopieerd · Spelers (x/10) · 🤖 Bot toevoegen · 👑 · bot · ✕ Verwijder · ✓ Ready / wacht… · Ik ben ready / ✓ Je bent ready · x/y ready · Eindscore · Start spel ▶ · Minimaal 2 spelers (voeg een bot toe) · Iedereen is ready! · Wachten op: {namen} · ⏳ Wachten tot de host het spel start… (eindscore x) · Verlaat kamer
+Deel deze code met je vrienden · 🔗 Kopieer uitnodigingslink · Link gekopieerd · Spelers (x/10) · 🤖 Makkelijk / Normaal / Slim · + Bot · 👑 · bot · ✕ Verwijder · ✓ Ready / wacht… · Ik ben ready / ✓ Je bent ready · x/y ready · Eindscore · Start spel ▶ · Minimaal 2 spelers (voeg een bot toe) · Iedereen is ready! · Wachten op: {namen} · ⏳ Wachten tot de host het spel start… (eindscore x) · Verlaat kamer
 
 ## In het spel
 Ronde x · eindigt bij x 🐮 · Kamer ABCD · ⏱ 60s · ⏹ Stop spel / 🚪 Verlaat spel

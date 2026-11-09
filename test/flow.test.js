@@ -110,6 +110,20 @@ test('bots toevoegen en verwijderen, spelers verwijderen', async () => {
   assert.ok((await w.state(host)).players.some((p) => p.id === host.id));
 });
 
+test('bot-niveau instellen', async () => {
+  const w = world();
+  const host = await w.make('Anna');
+  const bob = await w.join(host, 'Bob');
+  assert.equal((await w.state(host)).botLevel, 'normal');
+  await w.must(host, { t: 'botlevel', v: 'hard' });
+  assert.equal((await w.state(bob)).botLevel, 'hard');
+  await w.fail(host, { t: 'botlevel', v: 'geniaal' }, /Onbekend niveau/);
+  await w.fail(bob, { t: 'botlevel', v: 'easy' }, /host/);
+  await w.must(host, { t: 'ready', v: true }); await w.must(bob, { t: 'ready', v: true });
+  await w.must(host, { t: 'start' });
+  await w.fail(host, { t: 'botlevel', v: 'easy' }, /al gestart/);
+});
+
 test('ready, eindscore en starten', async () => {
   const w = world();
   const host = await w.make('Anna');

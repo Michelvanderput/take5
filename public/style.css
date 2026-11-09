@@ -466,3 +466,5 @@ button#ready.on { animation: none; }
 .pcard .tag.you { background: rgba(52, 211, 153, .18); color: #6ee7b7; }
 .pcard .kick { flex: none; width: 34px; height: 34px; padding: 0; border-radius: 50%; }
 @media (max-width: 560px) { .plist { grid-template-columns: 1fr; } .pcard .tag.you, .pcard .tag.host .lbl2 { display: inline; } }
+
+.botlvl select { padding: 6px 10px; font-size: .85rem; border-radius: 10px; }
